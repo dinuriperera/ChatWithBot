@@ -45,7 +45,9 @@ const Profile = () => {
       newsletter: true,
       notifications: true,
       twoFactorAuth: false
-    }
+    },
+    profileImage: '',
+    coverImage: ''
   });
   const [isDownloading, setIsDownloading] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
@@ -124,8 +126,18 @@ const Profile = () => {
           newsletter: true,
           notifications: true,
           twoFactorAuth: false
-        }
+        },
+        profileImage: user.profileImage || '',
+        coverImage: user.coverImage || ''
       }));
+
+      // Set the profile and cover images with full URLs
+      if (user.profileImage) {
+        setProfileImage(`http://localhost:3001${user.profileImage}`);
+      }
+      if (user.coverImage) {
+        setCoverImage(`http://localhost:3001${user.coverImage}`);
+      }
     } else {
       navigate('/auth');
     }
@@ -155,57 +167,209 @@ const Profile = () => {
     }
   }, [activeTab]);
 
-  const handleProfileImageChange = (e) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageSelect = (e, type) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        // Here you would typically upload the image to your server
-        // uploadProfileImage(file);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    // Update the UI immediately with the preview
+    if (type === 'profile') {
+      setProfileImage(previewUrl);
+    } else if (type === 'cover') {
+      setCoverImage(previewUrl);
+    }
+
+    setSelectedImage(file);
+    setSelectedImageType(type);
+    setShowImagePreview(true);
+    setIsEditing(true);
+  };
+
+  const handleImageUpload = async (type) => {
+    if (selectedImage) {
+      try {
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        formData.append('type', type);
+
+        const response = await axios.post(
+          'http://localhost:3001/api/auth/upload-image',
+          formData,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+
+        // Get the full image URL
+        const imageUrl = `http://localhost:3001${response.data.imageUrl}`;
+        
+        // Update local state and localStorage
+        if (type === 'profile') {
+          setProfileImage(imageUrl);
+          const user = JSON.parse(localStorage.getItem('user'));
+          user.profileImage = response.data.imageUrl; // Store relative path
+          localStorage.setItem('user', JSON.stringify(user));
+          setUserData(prev => ({ ...prev, profileImage: response.data.imageUrl }));
+        } else if (type === 'cover') {
+          setCoverImage(imageUrl);
+          const user = JSON.parse(localStorage.getItem('user'));
+          user.coverImage = response.data.imageUrl; // Store relative path
+          localStorage.setItem('user', JSON.stringify(user));
+          setUserData(prev => ({ ...prev, coverImage: response.data.imageUrl }));
+        }
+
+        // Reset states
+        setSelectedImage(null);
+        setSelectedImageType(null);
+        setShowImagePreview(false);
+        setIsEditing(false);
+        
+        toast.success(`${type === 'profile' ? 'Profile' : 'Cover'} image updated successfully`);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast.error('Failed to upload image. Please try again.');
+        
+        // Revert to previous image if upload fails
+        if (type === 'profile') {
+          const user = JSON.parse(localStorage.getItem('user'));
+          setProfileImage(user.profileImage ? `http://localhost:3001${user.profileImage}` : null);
+        } else if (type === 'cover') {
+          const user = JSON.parse(localStorage.getItem('user'));
+          setCoverImage(user.coverImage ? `http://localhost:3001${user.coverImage}` : null);
+        }
+      }
     }
   };
 
-  const handleCoverImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImage(reader.result);
-        // Here you would typically upload the image to your server
-        // uploadCoverImage(file);
-      };
-      reader.readAsDataURL(file);
-    }
+  // Add cleanup for image previews
+  useEffect(() => {
+    return () => {
+      // Cleanup any object URLs to avoid memory leaks
+      if (profileImage && profileImage.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImage);
+      }
+      if (coverImage && coverImage.startsWith('blob:')) {
+        URL.revokeObjectURL(coverImage);
+      }
+    };
+  }, [profileImage, coverImage]);
+
+  const handleCancelImage = () => {
+    setSelectedImage(null);
+    setSelectedImageType(null);
+    setShowImagePreview(false);
   };
 
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
+
+      // First handle image upload if there's a selected image
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        formData.append('type', selectedImageType);
+
+        const response = await axios.post(
+          'http://localhost:3001/api/auth/upload-image',
+          formData,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+
+        // Update the image URL from the response
+        const imageUrl = `http://localhost:3001${response.data.imageUrl}`;
+        
+        // Update local state based on image type
+        if (selectedImageType === 'profile') {
+          setProfileImage(imageUrl);
+          // Update user data in localStorage
+          const user = JSON.parse(localStorage.getItem('user'));
+          user.profileImage = response.data.imageUrl;
+          localStorage.setItem('user', JSON.stringify(user));
+          setUserData(prev => ({ ...prev, profileImage: response.data.imageUrl }));
+        } else if (selectedImageType === 'cover') {
+          setCoverImage(imageUrl);
+          // Update user data in localStorage
+          const user = JSON.parse(localStorage.getItem('user'));
+          user.coverImage = response.data.imageUrl;
+          localStorage.setItem('user', JSON.stringify(user));
+          setUserData(prev => ({ ...prev, coverImage: response.data.imageUrl }));
+        }
+
+        // Reset image selection states
+        setSelectedImage(null);
+        setSelectedImageType(null);
+        setShowImagePreview(false);
+      }
+
+      // Then update other profile information
       const response = await axios.put(
         'http://localhost:3001/api/auth/update-profile',
-        { name: userData.name },
         {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          name: userData.name,
+          phone: userData.phone,
+          dateOfBirth: userData.dateOfBirth,
+          occupation: userData.occupation,
+          gender: userData.gender,
+          socialMedia: userData.socialMedia,
+          preferences: userData.preferences,
+          profileImage: userData.profileImage,
+          coverImage: userData.coverImage
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      if (response.data.success) {
-        // Update localStorage with new user data
-        const updatedUser = { ...JSON.parse(localStorage.getItem('user')), name: userData.name };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        setSuccess('Profile updated successfully!');
-        setIsEditing(false);
-        setTimeout(() => setSuccess(''), 3000);
-      }
-    } catch {
-      setDeleteError('Failed to update profile. Please try again.');
-      setTimeout(() => setDeleteError(''), 3000);
+      // Update local storage with new user data
+      const updatedUser = {
+        ...JSON.parse(localStorage.getItem('user')),
+        ...response.data.user
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // Update state with new data
+      setUserData(prev => ({
+        ...prev,
+        ...response.data.user
+      }));
+
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -323,6 +487,10 @@ const Profile = () => {
     }
   };
 
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageType, setSelectedImageType] = useState(null);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white" style={spaceGrotesk}>
       {/* Profile Header */}
@@ -332,9 +500,13 @@ const Profile = () => {
             {/* Cover Image */}
             <div className="relative h-96 md:h-[22rem] rounded-3xl overflow-hidden shadow-[0_35px_60px_-15px_rgba(99,102,241,0.3)]">
               <img
-                src={coverImage}
+                src={coverImage || ProfileCover}
                 alt="Cover"
                 className="w-full h-full object-cover transition-all duration-700 hover:scale-110"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = ProfileCover;
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-all duration-500">
@@ -344,7 +516,7 @@ const Profile = () => {
                   <input
                     type="file"
                     ref={coverImageRef}
-                    onChange={handleCoverImageChange}
+                    onChange={(e) => handleImageSelect(e, 'cover')}
                     accept="image/*"
                     className="hidden"
                   />
@@ -358,8 +530,12 @@ const Profile = () => {
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                 <img
                   className="relative h-40 w-40 rounded-full object-cover ring-4 ring-indigo-500/30 transition-all duration-500 group-hover:scale-105"
-                  src={profileImage}
+                  src={profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop'}
                   alt="Profile"
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop';
+                  }}
                 />
                 <div className="absolute bottom-0 right-0 flex space-x-3">
                   <label className="cursor-pointer bg-indigo-600/90 backdrop-blur-xl text-white rounded-full p-3 hover:bg-indigo-700 transition-all duration-300 transform hover:scale-110 hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]">
@@ -367,7 +543,7 @@ const Profile = () => {
                     <input
                       type="file"
                       ref={profileImageRef}
-                      onChange={handleProfileImageChange}
+                      onChange={(e) => handleImageSelect(e, 'profile')}
                       accept="image/*"
                       className="hidden"
                     />
@@ -1256,6 +1432,39 @@ const Profile = () => {
       {deleteError && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
           {deleteError}
+        </div>
+      )}
+
+      {showImagePreview && selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full">
+            <h3 className="text-xl font-semibold mb-4">
+              Preview {selectedImageType === 'profile' ? 'Profile' : 'Cover'} Image
+            </h3>
+            <div className="relative mb-4">
+              <img
+                src={URL.createObjectURL(selectedImage)}
+                alt="Preview"
+                className={`w-full rounded-lg ${
+                  selectedImageType === 'profile' ? 'aspect-square object-cover' : 'h-64 object-cover'
+                }`}
+              />
+            </div>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleCancelImage}
+                className="px-4 py-2 text-gray-300 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleImageUpload()}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

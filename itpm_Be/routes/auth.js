@@ -2,15 +2,49 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-// Signup route
-router.post('/signup', async (req, res) => {
+// Ensure uploads directory exists
+const uploadDir = 'uploads/';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not an image! Please upload an image.'), false);
+    }
+  }
+});
+
+// Signup route with file upload
+router.post('/signup', upload.single('profileImage'), async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, dateOfBirth, occupation } = req.body;
 
     // Validate required fields
     if (!name || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: 'Name, email and password are required' });
     }
 
     // Check if user already exists
@@ -19,12 +53,21 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Create new user
-    const user = new User({
+    // Create new user with profile image if uploaded
+    const userData = {
       name,
       email,
-      password
-    });
+      password,
+      phone,
+      dateOfBirth,
+      occupation
+    };
+
+    if (req.file) {
+      userData.profileImage = `/uploads/${req.file.filename}`;
+    }
+
+    const user = new User(userData);
 
     // Save user to database
     await user.save();
@@ -45,6 +88,10 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        occupation: user.occupation,
+        profileImage: user.profileImage,
         role: user.role
       }
     });
@@ -93,6 +140,11 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        occupation: user.occupation,
+        profileImage: user.profileImage,
+        coverImage: user.coverImage,
         role: user.role
       }
     });
@@ -132,14 +184,21 @@ router.put('/update-profile', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    const { name } = req.body;
+    const { name, phone, dateOfBirth, occupation, profileImage, coverImage } = req.body;
 
     const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.name = name;
+    // Update all fields
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+    if (occupation) user.occupation = occupation;
+    if (profileImage) user.profileImage = profileImage;
+    if (coverImage) user.coverImage = coverImage;
+
     await user.save();
 
     res.json({
@@ -149,6 +208,11 @@ router.put('/update-profile', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        occupation: user.occupation,
+        profileImage: user.profileImage,
+        coverImage: user.coverImage,
         role: user.role
       }
     });
