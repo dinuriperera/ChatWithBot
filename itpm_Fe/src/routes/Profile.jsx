@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaUser, FaShoppingBag, FaHeart, FaComments, FaCog, FaEdit, FaTrash, FaSave, FaTimes, FaCamera, FaUpload, FaSignOutAlt, FaDownload, FaSpinner, FaMapMarkerAlt, FaBriefcase, FaEnvelope, FaPhone, FaCalendarAlt, FaVenusMars, FaCreditCard, FaGlobe, FaFacebookF, FaTwitter, FaLinkedinIn, FaInstagram } from 'react-icons/fa';
+import { FaUser, FaShoppingBag, FaHeart, FaComments, FaCog, FaEdit, FaTrash, FaSave, FaTimes, FaCamera, FaUpload, FaSignOutAlt, FaDownload, FaSpinner, FaMapMarkerAlt, FaBriefcase, FaEnvelope, FaPhone, FaCalendarAlt, FaVenusMars, FaCreditCard, FaGlobe, FaFacebookF, FaTwitter, FaLinkedinIn, FaInstagram, FaMicrochip, FaMemory, FaHdd, FaDesktop, FaThermometerHalf, FaBox } from 'react-icons/fa';
 import Slider from 'react-slick';
 import Footer from '../Components/Footer';
 import ProfileCover from '../../src/assets/Images/Home/Hero.jpg'
@@ -9,6 +9,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import "../styles/carousel.css";
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 // Add Space Grotesk font import
 const spaceGrotesk = {
   fontFamily: "'Space Grotesk', sans-serif",
@@ -53,6 +54,7 @@ const Profile = () => {
   const [accountCreationDate] = useState('2023-09-15'); // This should come from your backend
   const [deleteError, setDeleteError] = useState('');
   const [success, setSuccess] = useState('');
+  const [userBuilds, setUserBuilds] = useState([]);
 
   const profileImageRef = useRef(null);
   const coverImageRef = useRef(null);
@@ -128,6 +130,30 @@ const Profile = () => {
       navigate('/auth');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    // Fetch user's PC builds
+    const fetchUserBuilds = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get('http://localhost:3001/api/pcbuilds/my-builds', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUserBuilds(response.data);
+      } catch (error) {
+        console.error('Error fetching user builds:', error);
+        toast.error('Failed to fetch your PC builds');
+      }
+    };
+
+    if (activeTab === 'builds') {
+      fetchUserBuilds();
+    }
+  }, [activeTab]);
 
   const handleProfileImageChange = (e) => {
     const file = e.target.files[0];
@@ -278,6 +304,25 @@ const Profile = () => {
     setShowDeleteConfirmation(true);
   };
 
+  const handleDeleteBuild = async (buildId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      await axios.delete(`http://localhost:3001/api/pcbuilds/${buildId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setUserBuilds(prevBuilds => prevBuilds.filter(build => build._id !== buildId));
+      toast.success('Build deleted successfully');
+    } catch (error) {
+      console.error('Error deleting build:', error);
+      toast.error('Failed to delete build');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white" style={spaceGrotesk}>
       {/* Profile Header */}
@@ -357,7 +402,8 @@ const Profile = () => {
               { id: 'wishlist', label: 'Wishlist', icon: FaHeart },
               { id: 'chat', label: 'Chat History', icon: FaComments },
               { id: 'settings', label: 'Settings', icon: FaCog },
-              { id: 'signout', label: 'Sign Out', icon: FaSignOutAlt }
+              { id: 'signout', label: 'Sign Out', icon: FaSignOutAlt },
+              { id: 'builds', label: 'My PC Builds', icon: FaMicrochip }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -983,6 +1029,95 @@ const Profile = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* My PC Builds Section */}
+          {activeTab === 'builds' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold mb-6">My PC Builds</h2>
+              {userBuilds.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">You haven't created any PC builds yet.</p>
+                  <button
+                    onClick={() => navigate('/PCBuilder')}
+                    className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Create New Build
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {userBuilds.map((build) => (
+                    <div
+                      key={build._id}
+                      className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-indigo-500/20"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-semibold">{build.buildName}</h3>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDeleteBuild(build._id)}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {build.buildDescription && (
+                        <p className="text-gray-400 mb-4">{build.buildDescription}</p>
+                      )}
+
+                      <div className="space-y-3 mb-4">
+                        {Object.entries(build.components).map(([category, component]) => (
+                          component && (
+                            <div key={category} className="flex items-center justify-between p-2 bg-black/20 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <div className="bg-indigo-500/20 p-2 rounded-lg">
+                                  {category === 'cpu' && <FaMicrochip />}
+                                  {category === 'ram' && <FaMemory />}
+                                  {category === 'ssd' && <FaHdd />}
+                                  {category === 'gpu' && <FaDesktop />}
+                                  {category === 'motherboard' && <FaBox />}
+                                  {category === 'psu' && <FaThermometerHalf />}
+                                  {category === 'case' && <FaBox />}
+                                  {category === 'cooling' && <FaThermometerHalf />}
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-300 capitalize">{category}</p>
+                                  <p className="text-sm font-medium">{component.name}</p>
+                                </div>
+                              </div>
+                              <p className="text-indigo-400">${component.price}</p>
+                            </div>
+                          )
+                        ))}
+                      </div>
+
+                      <div className="border-t border-indigo-500/20 pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-400">Total Price</span>
+                          <span className="text-xl font-bold text-indigo-400">
+                            ${build.totalPrice.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="mt-2">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            build.status === 'Processing'
+                              ? 'bg-yellow-900/50 text-yellow-200'
+                              : build.status === 'Completed'
+                              ? 'bg-green-900/50 text-green-200'
+                              : 'bg-red-900/50 text-red-200'
+                          }`}>
+                            {build.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
