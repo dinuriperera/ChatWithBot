@@ -56,6 +56,12 @@ const PCBuilder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [sortConfig, setSortConfig] = useState({
+    category: '',
+    field: 'price',
+    direction: 'asc'
+  });
+
   // Fetch components from backend
   useEffect(() => {
     const fetchComponents = async () => {
@@ -102,14 +108,40 @@ const PCBuilder = () => {
     return ['all', ...new Set(components[category].map(item => item.brand))];
   };
 
-  // Filter components based on search query and selected brand
+  // Filter and sort components
   const getFilteredComponents = (category) => {
-    return components[category].filter(item => {
+    let filtered = components[category].filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchQueries[category].toLowerCase()) ||
                           item.specs.toLowerCase().includes(searchQueries[category].toLowerCase());
       const matchesBrand = selectedBrands[category] === 'all' || item.brand === selectedBrands[category];
       return matchesSearch && matchesBrand;
     });
+
+    // Sort components
+    if (sortConfig.category === category) {
+      filtered.sort((a, b) => {
+        if (sortConfig.field === 'price') {
+          return sortConfig.direction === 'asc' ? a.price - b.price : b.price - a.price;
+        } else if (sortConfig.field === 'brand') {
+          return sortConfig.direction === 'asc' 
+            ? a.brand.localeCompare(b.brand) 
+            : b.brand.localeCompare(a.brand);
+        } else if (sortConfig.field === 'stock') {
+          return sortConfig.direction === 'asc' ? a.stock - b.stock : b.stock - a.stock;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  };
+
+  const handleSort = (category, field) => {
+    setSortConfig(prev => ({
+      category,
+      field,
+      direction: prev.category === category && prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   // Handle component selection
@@ -228,10 +260,10 @@ const PCBuilder = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12 mt-[100px]">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-blue-400 mb-4">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 mb-4">
             Custom PC Builder
           </h1>
           <p className="text-gray-300 text-lg">
@@ -243,10 +275,10 @@ const PCBuilder = () => {
           {/* Component Selection */}
           <div className="lg:col-span-2 space-y-6">
             {Object.keys(components).map((category) => (
-              <div key={category} className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-indigo-500/20">
+              <div key={category} className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-purple-500/20">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-white capitalize flex items-center gap-2">
-                    <span className="bg-indigo-500/20 p-2 rounded-lg">
+                    <span className="bg-purple-500/20 p-2 rounded-lg">
                       {category === 'cpu' && <FaMicrochip />}
                       {category === 'ram' && <FaMemory />}
                       {category === 'ssd' && <FaHdd />}
@@ -268,8 +300,8 @@ const PCBuilder = () => {
                   )}
                 </div>
 
-                {/* Search and Brand Filter */}
-                <div className="flex gap-4 mb-6">
+                {/* Search, Filter, and Sort Controls */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <div className="flex-1 relative">
                     <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
@@ -277,13 +309,20 @@ const PCBuilder = () => {
                       placeholder={`Search ${category}...`}
                       value={searchQueries[category]}
                       onChange={(e) => handleSearchChange(category, e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full pl-10 pr-4 py-2 bg-black/20 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
                     />
                   </div>
                   <select
                     value={selectedBrands[category]}
                     onChange={(e) => handleBrandChange(category, e.target.value)}
-                    className="px-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer hover:bg-black/30 transition-colors duration-200"
+                    className="px-4 py-2 bg-black/20 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none hover:bg-black/30 transition-colors min-w-[150px]"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238B5CF6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem'
+                    }}
                   >
                     {getBrands(category).map(brand => (
                       <option key={brand} value={brand} className="bg-gray-900 text-white">
@@ -291,6 +330,44 @@ const PCBuilder = () => {
                       </option>
                     ))}
                   </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSort(category, 'price')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        sortConfig.category === category && sortConfig.field === 'price'
+                          ? 'bg-purple-600 border-purple-500 text-white'
+                          : 'border-purple-500/20 text-gray-300 hover:border-purple-500'
+                      }`}
+                    >
+                      Price {sortConfig.category === category && sortConfig.field === 'price' && (
+                        sortConfig.direction === 'asc' ? '↑' : '↓'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSort(category, 'brand')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        sortConfig.category === category && sortConfig.field === 'brand'
+                          ? 'bg-purple-600 border-purple-500 text-white'
+                          : 'border-purple-500/20 text-gray-300 hover:border-purple-500'
+                      }`}
+                    >
+                      Brand {sortConfig.category === category && sortConfig.field === 'brand' && (
+                        sortConfig.direction === 'asc' ? '↑' : '↓'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleSort(category, 'stock')}
+                      className={`px-4 py-2 rounded-lg border transition-colors ${
+                        sortConfig.category === category && sortConfig.field === 'stock'
+                          ? 'bg-purple-600 border-purple-500 text-white'
+                          : 'border-purple-500/20 text-gray-300 hover:border-purple-500'
+                      }`}
+                    >
+                      Stock {sortConfig.category === category && sortConfig.field === 'stock' && (
+                        sortConfig.direction === 'asc' ? '↑' : '↓'
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -300,14 +377,14 @@ const PCBuilder = () => {
                       onClick={() => handleSelectComponent(category, component)}
                       className={`p-4 rounded-lg border cursor-pointer transition-all duration-300 ${
                         selectedComponents[category]?._id === component._id
-                          ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                          : 'bg-black/20 border-indigo-500/20 text-gray-300 hover:border-indigo-500'
+                          ? 'bg-purple-600/20 border-purple-500 text-white'
+                          : 'bg-black/20 border-purple-500/20 text-gray-300 hover:border-purple-500'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <h3 className="font-medium text-white">{component.name}</h3>
-                          <span className="text-xs text-indigo-400 bg-indigo-500/20 px-2 py-1 rounded-full">
+                          <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded-full">
                             {component.brand}
                           </span>
                         </div>
@@ -319,7 +396,7 @@ const PCBuilder = () => {
                       </div>
                       <p className="text-sm text-gray-400 mt-2">{component.specs}</p>
                       <div className="flex justify-between items-center mt-3">
-                        <p className="text-indigo-400 font-semibold">${component.price}</p>
+                        <p className="text-purple-400 font-semibold">${component.price}</p>
                         <p className="text-sm text-gray-400">Stock: {component.stock}</p>
                       </div>
                     </div>
@@ -331,7 +408,7 @@ const PCBuilder = () => {
 
           {/* Build Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-indigo-500/20 sticky top-8">
+            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-purple-500/20 sticky top-8">
               <h2 className="text-xl font-semibold text-white mb-6">Build Summary</h2>
               
               <div className="space-y-4 mb-6">
@@ -339,7 +416,7 @@ const PCBuilder = () => {
                   component && (
                     <div key={category} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="bg-indigo-500/20 p-2 rounded-lg">
+                        <div className="bg-purple-500/20 p-2 rounded-lg">
                           {category === 'cpu' && <FaMicrochip />}
                           {category === 'ram' && <FaMemory />}
                           {category === 'ssd' && <FaHdd />}
@@ -352,19 +429,19 @@ const PCBuilder = () => {
                         <div>
                           <p className="text-sm text-gray-300 capitalize">{category}</p>
                           <p className="text-sm font-medium text-white">{component.name}</p>
-                          <p className="text-xs text-indigo-400">{component.brand}</p>
+                          <p className="text-xs text-purple-400">{component.brand}</p>
                         </div>
                       </div>
-                      <p className="text-indigo-400">${component.price}</p>
+                      <p className="text-purple-400">${component.price}</p>
                     </div>
                   )
                 ))}
               </div>
 
-              <div className="border-t border-indigo-500/20 pt-6">
+              <div className="border-t border-purple-500/20 pt-6">
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-lg font-semibold text-white">Total Price</span>
-                  <span className="text-2xl font-bold text-indigo-400">${totalPrice.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-purple-400">${totalPrice.toFixed(2)}</span>
                 </div>
 
                 <div className="space-y-4">
@@ -373,13 +450,13 @@ const PCBuilder = () => {
                     placeholder="Name your build"
                     value={buildName}
                     onChange={(e) => setBuildName(e.target.value)}
-                    className="w-full bg-black/20 border border-indigo-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <textarea
                     placeholder="Add a description (optional)"
                     value={buildDescription}
                     onChange={(e) => setBuildDescription(e.target.value)}
-                    className="w-full bg-black/20 border border-indigo-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none"
+                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
                   />
                   <div className="flex gap-4">
                     <button
@@ -400,7 +477,7 @@ const PCBuilder = () => {
                       className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 ${
                         Object.values(selectedComponents).filter(Boolean).length === 0
                           ? 'bg-gray-600 cursor-not-allowed'
-                          : 'bg-indigo-600 hover:bg-indigo-700'
+                          : 'bg-purple-600 hover:bg-purple-700'
                       }`}
                     >
                       <FaShoppingCart />
