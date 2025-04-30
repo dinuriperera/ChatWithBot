@@ -24,6 +24,8 @@ const PCBuilderAdmin = () => {
     direction: 'asc'
   });
   const [activeCategory, setActiveCategory] = useState('cpu');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [fieldTouched, setFieldTouched] = useState({});
 
   const [newComponent, setNewComponent] = useState({
     name: '',
@@ -99,9 +101,118 @@ const PCBuilderAdmin = () => {
     );
   };
 
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          return 'Name is required';
+        }
+        if (value.trim().length < 3) {
+          return 'Name should be at least 3 characters long';
+        }
+        return '';
+      
+      case 'brand':
+        if (!value.trim()) {
+          return 'Brand is required';
+        }
+        if (value.trim().length < 2) {
+          return 'Brand should be at least 2 characters long';
+        }
+        return '';
+      
+      case 'price':
+        if (!value) {
+          return 'Price is required';
+        }
+        if (parseFloat(value) <= 0) {
+          return 'Price must be greater than 0';
+        }
+        if (isNaN(value)) {
+          return 'Please enter a valid number';
+        }
+        return '';
+      
+      case 'stock':
+        if (value === '') {
+          return 'Stock is required';
+        }
+        if (parseInt(value) < 0) {
+          return 'Stock cannot be negative';
+        }
+        if (isNaN(value)) {
+          return 'Please enter a valid number';
+        }
+        return '';
+      
+      case 'category':
+        if (!value) {
+          return 'Please select a category';
+        }
+        return '';
+      
+      case 'specs':
+        if (!value.trim()) {
+          return 'Specifications are required';
+        }
+        if (value.trim().length < 10) {
+          return 'Please provide more detailed specifications (at least 10 characters)';
+        }
+        return '';
+      
+      default:
+        return '';
+    }
+  };
+
+  const handleFieldChange = (name, value) => {
+    setNewComponent(prev => ({ ...prev, [name]: value }));
+    if (fieldTouched[name]) {
+      const error = validateField(name, value);
+      setValidationErrors(prev => ({ ...prev, [name]: error }));
+    }
+  };
+
+  const handleFieldBlur = (name, value) => {
+    setFieldTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, value);
+    setValidationErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!newComponent.name.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!newComponent.brand.trim()) {
+      errors.brand = 'Brand is required';
+    }
+    
+    if (!newComponent.category) {
+      errors.category = 'Category is required';
+    }
+    
+    if (!newComponent.price || parseFloat(newComponent.price) <= 0) {
+      errors.price = 'Price must be greater than 0';
+    }
+    
+    if (newComponent.stock < 0) {
+      errors.stock = 'Stock cannot be negative';
+    }
+    
+    if (!newComponent.specs.trim()) {
+      errors.specs = 'Specifications are required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddComponent = async () => {
-    if (!newComponent.category || !newComponent.name || !newComponent.price || !newComponent.specs || !newComponent.brand) {
-      toast.error('Please fill in all required fields');
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -117,6 +228,7 @@ const PCBuilderAdmin = () => {
         stock: 0,
         category: ''
       });
+      setValidationErrors({});
       toast.success('Component added successfully');
     } catch (error) {
       console.error('Error adding component:', error);
@@ -125,8 +237,8 @@ const PCBuilderAdmin = () => {
   };
 
   const handleUpdateComponent = async () => {
-    if (!editingComponent || !newComponent.name || !newComponent.price || !newComponent.specs || !newComponent.brand) {
-      toast.error('Please fill in all required fields');
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors');
       return;
     }
 
@@ -142,6 +254,7 @@ const PCBuilderAdmin = () => {
         stock: 0,
         category: ''
       });
+      setValidationErrors({});
       toast.success('Component updated successfully');
     } catch (error) {
       console.error('Error updating component:', error);
@@ -543,67 +656,139 @@ const PCBuilderAdmin = () => {
                   <input
                     type="text"
                     value={newComponent.name}
-                    onChange={(e) => setNewComponent({ ...newComponent, name: e.target.value })}
-                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('name', e.target.value)}
+                    className={`w-full bg-black/20 border ${validationErrors.name ? 'border-red-500' : 'border-purple-500/20'} rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200`}
+                    placeholder="Enter component name"
                     required
                   />
+                  {validationErrors.name && (
+                    <p className="mt-1 text-sm text-red-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {validationErrors.name}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Brand</label>
                   <input
                     type="text"
                     value={newComponent.brand}
-                    onChange={(e) => setNewComponent({ ...newComponent, brand: e.target.value })}
-                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => handleFieldChange('brand', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('brand', e.target.value)}
+                    className={`w-full bg-black/20 border ${validationErrors.brand ? 'border-red-500' : 'border-purple-500/20'} rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200`}
+                    placeholder="Enter brand name"
                     required
                   />
+                  {validationErrors.brand && (
+                    <p className="mt-1 text-sm text-red-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {validationErrors.brand}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Price</label>
-                  <input
-                    type="number"
-                    value={newComponent.price}
-                    onChange={(e) => setNewComponent({ ...newComponent, price: e.target.value })}
-                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    required
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                    <input
+                      type="number"
+                      value={newComponent.price}
+                      onChange={(e) => handleFieldChange('price', e.target.value)}
+                      onBlur={(e) => handleFieldBlur('price', e.target.value)}
+                      className={`w-full bg-black/20 border ${validationErrors.price ? 'border-red-500' : 'border-purple-500/20'} rounded-lg pl-7 pr-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200`}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  {validationErrors.price && (
+                    <p className="mt-1 text-sm text-red-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {validationErrors.price}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Stock</label>
                   <input
                     type="number"
                     value={newComponent.stock}
-                    onChange={(e) => setNewComponent({ ...newComponent, stock: parseInt(e.target.value) })}
-                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    onChange={(e) => handleFieldChange('stock', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('stock', e.target.value)}
+                    className={`w-full bg-black/20 border ${validationErrors.stock ? 'border-red-500' : 'border-purple-500/20'} rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200`}
+                    placeholder="Enter stock quantity"
+                    min="0"
                     required
                   />
+                  {validationErrors.stock && (
+                    <p className="mt-1 text-sm text-red-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {validationErrors.stock}
+                    </p>
+                  )}
                 </div>
                 {!editingComponent && (
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
-                    <select
-                      value={newComponent.category}
-                      onChange={(e) => setNewComponent({ ...newComponent, category: e.target.value })}
-                      className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={newComponent.category}
+                        onChange={(e) => handleFieldChange('category', e.target.value)}
+                        onBlur={(e) => handleFieldBlur('category', e.target.value)}
+                        className={`w-full bg-black/20 border ${validationErrors.category ? 'border-red-500' : 'border-purple-500/20'} rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none transition-all duration-200 hover:border-purple-500/40`}
+                        required
+                      >
+                        <option value="" className="bg-gray-900">Select Category</option>
+                        {categories.filter(category => category.id !== 'all').map(category => (
+                          <option key={category.id} value={category.id} className="bg-gray-900">
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    {validationErrors.category && (
+                      <p className="mt-1 text-sm text-red-400 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {validationErrors.category}
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">Specifications</label>
                   <textarea
                     value={newComponent.specs}
-                    onChange={(e) => setNewComponent({ ...newComponent, specs: e.target.value })}
-                    className="w-full bg-black/20 border border-purple-500/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
+                    onChange={(e) => handleFieldChange('specs', e.target.value)}
+                    onBlur={(e) => handleFieldBlur('specs', e.target.value)}
+                    className={`w-full bg-black/20 border ${validationErrors.specs ? 'border-red-500' : 'border-purple-500/20'} rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none transition-colors duration-200`}
+                    placeholder="Enter detailed specifications"
                     required
                   />
+                  {validationErrors.specs && (
+                    <p className="mt-1 text-sm text-red-400 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {validationErrors.specs}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
