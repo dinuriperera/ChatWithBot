@@ -13,6 +13,7 @@ import Auth from './routes/Auth'
 import PCBuilderAdmin from './pages/PCBuilderAdmin'
 import Laptops from './routes/Laptops'
 import InventoryTable from './routes/InventoryTable'
+import ChatbotWrapper from './Components/ChatbotWrapper'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -47,6 +48,7 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/pc-builder-admin" element={<PCBuilderAdmin />} />
+          <Route path="/chatbot" element={<ChatbotWrapper />} />
         </Routes>
       </main>
     </div>
