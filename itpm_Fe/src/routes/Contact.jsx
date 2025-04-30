@@ -87,7 +87,7 @@ const Contact = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Your Email</label>
                 <input
                   type="email"
                   className="w-full rounded-xl bg-white/5 border border-purple-900/50 text-white shadow-sm focus:border-purple-400 focus:ring-purple-400 p-3 transition-all duration-300"
