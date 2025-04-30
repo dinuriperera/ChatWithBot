@@ -1,0 +1,24 @@
+{
+  "name": "itpm-root",
+  "version": "1.0.0",
+  "description": "Root project for ITPM with integrated AI Chatbot",
+  "private": true,
+  "scripts": {
+    "dev": "cd itpm_Fe && npm run dev",
+    "dev:chatbot": "cd aiChatBot/laptop-shop-chatbot && npm start",
+    "install:fe": "cd itpm_Fe && npm install",
+    "install:chatbot": "cd aiChatBot/laptop-shop-chatbot && npm install",
+    "install:all": "npm run install:fe && npm run install:chatbot"
+  },
+  "keywords": [
+    "itpm",
+    "chatbot",
+    "react"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react-slick": "^0.30.3",
+    "slick-carousel": "^1.8.1"
+  }
+}

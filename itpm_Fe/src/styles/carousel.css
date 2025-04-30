@@ -1,0 +1,394 @@
+/* Custom styles for the activity slider */
+.activity-slider {
+  padding: 0 40px;
+}
+
+.activity-slider .slick-slide {
+  transition: all 0.3s ease;
+  padding: 8px;
+}
+
+.activity-slider .slick-slide:hover {
+  transform: translateY(-4px);
+}
+
+.activity-slider .slick-dots {
+  bottom: -30px;
+  margin-top: 20px;
+}
+
+.activity-slider .slick-dots li {
+  margin: 0 6px;
+}
+
+.activity-slider .slick-dots li button:before {
+  color: #6366f1;
+  opacity: 0.2;
+  font-size: 8px;
+  transition: all 0.3s ease;
+}
+
+.activity-slider .slick-dots li.slick-active button:before {
+  color: #6366f1;
+  opacity: 1;
+  transform: scale(1.5);
+}
+
+.activity-slider .slick-prev,
+.activity-slider .slick-next {
+  width: 40px;
+  height: 40px;
+  background: rgba(99, 102, 241, 0.1);
+  backdrop-filter: blur(8px);
+  border-radius: 50%;
+  margin: 0 20px;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.activity-slider .slick-prev {
+  left: -20px;
+}
+
+.activity-slider .slick-next {
+  right: -20px;
+}
+
+.activity-slider .slick-prev:hover,
+.activity-slider .slick-next:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: scale(1.1);
+}
+
+.activity-slider .slick-prev:before,
+.activity-slider .slick-next:before {
+  font-size: 20px;
+  opacity: 0.8;
+  color: #6366f1;
+  transition: all 0.3s ease;
+}
+
+.activity-slider .slick-prev:hover:before,
+.activity-slider .slick-next:hover:before {
+  opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .activity-slider {
+    padding: 0 30px;
+  }
+  
+  .activity-slider .slick-prev {
+    left: -15px;
+  }
+  
+  .activity-slider .slick-next {
+    right: -15px;
+  }
+}
+
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  25% {
+    transform: translateY(-10px) rotate(-1deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(1deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+    opacity: 0.5;
+  }
+  100% {
+    background-position: 1000px 0;
+    opacity: 1;
+  }
+}
+
+@keyframes tilt {
+  0%, 100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+/* Profile Card Animations */
+.profile-stat-card {
+  animation: float 8s ease-in-out infinite;
+  transition: all 0.5s ease;
+}
+
+.profile-stat-card:hover {
+  animation: pulse 1s ease-in-out infinite;
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px -20px rgba(99, 102, 241, 0.5);
+}
+
+/* Gradient Backgrounds */
+.gradient-border {
+  position: relative;
+  border-radius: 1rem;
+  background: linear-gradient(
+    45deg,
+    rgba(99, 102, 241, 0.4),
+    rgba(79, 70, 229, 0.4),
+    rgba(99, 102, 241, 0.4)
+  );
+  padding: 1px;
+  transition: all 0.5s ease;
+}
+
+.gradient-border:hover {
+  background: linear-gradient(
+    45deg,
+    rgba(99, 102, 241, 0.6),
+    rgba(79, 70, 229, 0.6),
+    rgba(99, 102, 241, 0.6)
+  );
+  transform: translateY(-5px);
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(
+    45deg,
+    rgba(99, 102, 241, 0.4),
+    rgba(79, 70, 229, 0.4),
+    rgba(99, 102, 241, 0.4)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: all 0.5s ease;
+}
+
+/* Shimmer Effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(99, 102, 241, 0.2) 50%,
+    rgba(99, 102, 241, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+}
+
+/* Glassmorphism */
+.glass-effect {
+  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  transition: all 0.5s ease;
+}
+
+.glass-effect:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Input Focus Effects */
+.focus-effect:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  border-color: #6366f1;
+  transform: translateY(-2px);
+}
+
+/* Button Hover Effects */
+.button-hover {
+  transition: all 0.5s ease;
+}
+
+.button-hover:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.5);
+}
+
+/* Toggle Switch Animation */
+.toggle-switch {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active::after {
+  transform: translateX(24px);
+  background-color: #6366f1;
+}
+
+/* Card Hover Effects */
+.hover-card {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 30px 60px -20px rgba(99, 102, 241, 0.4);
+}
+
+/* Notification Animation */
+@keyframes slideIn {
+  0% {
+    transform: translateX(100%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.notification {
+  animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Loading Spinner Animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.loading-spinner {
+  animation: spin 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Profile Image Hover Effect */
+.profile-image-hover {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-image-hover:hover {
+  transform: scale(1.08) rotate(2deg);
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.4);
+}
+
+/* Social Media Icons Hover Effect */
+.social-icon {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.social-icon:hover {
+  transform: scale(1.2) rotate(8deg);
+  filter: brightness(1.2);
+}
+
+/* Tab Hover Animation */
+.tab-hover {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-hover:hover {
+  background-color: rgba(99, 102, 241, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.3);
+}
+
+/* Modal Animation */
+@keyframes modalFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal {
+  animation: modalFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Add new animation for tilt effect */
+@keyframes tilt-animation {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.animate-tilt {
+  animation: tilt-animation 10s ease-in-out infinite;
+}
+
+/* Add new hover effect for cards */
+.hover-lift {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 30px 60px -12px rgba(99, 102, 241, 0.25);
+} 
