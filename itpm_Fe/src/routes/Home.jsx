@@ -4,6 +4,7 @@ import Footer from '../Components/Footer';
 import Hero from '../assets/Images/Home/Group 276.png';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import FloatingChatButton from '../Components/FloatingChatButton';
 
 const Home = () => {
   const [users, setUsers] = useState([]); // ✅ Corrected: useState, not userState
@@ -39,7 +40,7 @@ useEffect(() => {
   };
 
   const handleChatWithBot = () => {
-    window.location.href = 'http://localhost:3001'; // Navigate to the chatbot application running on port 3001
+    navigate('/chatbot');  // Changed to navigate within the app
   };
 
 
@@ -322,7 +323,8 @@ useEffect(() => {
   </table>
 </div>
 
-
+      {/* Add the floating chat button */}
+      <FloatingChatButton />
     </div>
   );
 };

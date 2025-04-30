@@ -7,8 +7,11 @@
     "dev": "cd itpm_Fe && npm run dev",
     "dev:chatbot": "cd aiChatBot/laptop-shop-chatbot && npm start",
     "install:fe": "cd itpm_Fe && npm install",
+    "install:be": "cd itpm_Be && npm install",
     "install:chatbot": "cd aiChatBot/laptop-shop-chatbot && npm install",
-    "install:all": "npm run install:fe && npm run install:chatbot"
+    "install:all": "npm run install:fe && npm run install:be && npm run install:chatbot",
+    "start": "npm run dev",
+    "start:all": "concurrently \"npm run dev\" \"npm run dev:chatbot\""
   },
   "keywords": [
     "itpm",
@@ -19,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "react-slick": "^0.30.3",
-    "slick-carousel": "^1.8.1"
+    "slick-carousel": "^1.8.1",
+    "concurrently": "^8.2.2"
   }
 }
