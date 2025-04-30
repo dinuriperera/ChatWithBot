@@ -6,6 +6,7 @@ const userModel = require('./models/users.js');
 const pcBuildModel = require('./models/pcbuilds.js');
 const authRoutes = require('./routes/auth');
 const componentRoutes = require('./routes/components');
+const inventoryRoutes = require('./routes/inventory');
 
 const app = express();
 
@@ -36,6 +37,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/components', componentRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 app.get('/getusers', async (req, res) => {
     userModel.find()
