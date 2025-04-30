@@ -10,6 +10,7 @@ import ProductDetail from './routes/ProductDetail'
 import PCBuilder from "./routes/PCBuilder"
 import AdminDashboard from './routes/AdminDashboard'
 import Auth from './routes/Auth'
+import PCBuilderAdmin from './pages/PCBuilderAdmin'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -41,6 +42,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/pc-builder-admin" element={<PCBuilderAdmin />} />
         </Routes>
       </main>
     </div>
