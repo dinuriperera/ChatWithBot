@@ -34,63 +34,99 @@ const ViewDetailsModal = ({ isOpen, onClose, item }) => {
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                <FaBox className="text-purple-500" />
+                <FaTag className="text-purple-500" />
                 <span>Basic Information</span>
               </h3>
-              <div className="grid grid-cols-1 gap-4 bg-gray-800/30 p-4 rounded-xl">
-                <div>
-                  <label className="text-sm text-gray-400">Item Name</label>
-                  <p className="text-white font-medium mt-1">{item.itemName}</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                 <div>
                   <label className="text-sm text-gray-400">Category</label>
                   <p className="text-white font-medium mt-1">{item.category}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400">Description</label>
-                  <p className="text-white font-medium mt-1">{item.description}</p>
+                  <label className="text-sm text-gray-400">Name</label>
+                  <p className="text-white font-medium mt-1">{item.name}</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Stock and Price Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                <FaWarehouse className="text-blue-500" />
-                <span>Stock and Price Information</span>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                 <div>
-                  <label className="text-sm text-gray-400">Quantity</label>
-                  <p className="text-white font-medium mt-1">{item.quantity}</p>
+                  <label className="text-sm text-gray-400">Brand</label>
+                  <p className="text-white font-medium mt-1">{item.brand}</p>
                 </div>
                 <div>
                   <label className="text-sm text-gray-400">Price</label>
-                  <p className="text-white font-medium mt-1">${item.price.toFixed(2)}</p>
+                  <p className="text-white font-medium mt-1">${item.price?.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
-            {/* Timestamps */}
+            {/* Specifications */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                <FaCalendar className="text-green-500" />
-                <span>Timestamps</span>
+                <FaWarehouse className="text-blue-500" />
+                <span>Specifications</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                 <div>
-                  <label className="text-sm text-gray-400">Created At</label>
-                  <p className="text-white font-medium mt-1">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </p>
+                  <label className="text-sm text-gray-400">Processor</label>
+                  <p className="text-white font-medium mt-1">{item.specs?.processor || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400">Last Updated</label>
+                  <label className="text-sm text-gray-400">RAM</label>
+                  <p className="text-white font-medium mt-1">{item.specs?.ram || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400">Storage</label>
+                  <p className="text-white font-medium mt-1">{item.specs?.storage || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400">Graphics</label>
+                  <p className="text-white font-medium mt-1">{item.specs?.graphics || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400">Display</label>
+                  <p className="text-white font-medium mt-1">{item.specs?.display || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stock Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                <FaDollarSign className="text-green-500" />
+                <span>Stock Information</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
+                <div>
+                  <label className="text-sm text-gray-400">Stock</label>
+                  <p className="text-white font-medium mt-1">{item.stock} units</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400">Status</label>
                   <p className="text-white font-medium mt-1">
-                    {new Date(item.updatedAt).toLocaleString()}
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      item.status === 'in-stock'
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        : item.status === 'low-stock'
+                        ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                      {item.status === 'in-stock'
+                        ? 'In Stock'
+                        : item.status === 'low-stock'
+                        ? 'Low Stock'
+                        : 'Out of Stock'}
+                    </span>
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end pt-6 border-t border-purple-500/20">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors border border-purple-500/20"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

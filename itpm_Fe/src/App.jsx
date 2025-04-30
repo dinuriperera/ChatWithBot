@@ -11,6 +11,8 @@ import PCBuilder from "./routes/PCBuilder"
 import AdminDashboard from './routes/AdminDashboard'
 import Auth from './routes/Auth'
 import PCBuilderAdmin from './pages/PCBuilderAdmin'
+import Laptops from './routes/Laptops'
+import InventoryTable from './routes/InventoryTable'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -35,9 +37,11 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/Product" element={<Services />} />
+          <Route path="/laptops" element={<Laptops />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/inventory-table" element={<InventoryTable />} />
           <Route path="/PCBuilder" element={<PCBuilder />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/admin" element={<AdminDashboard />} />

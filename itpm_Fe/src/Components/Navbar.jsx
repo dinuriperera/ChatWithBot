@@ -63,8 +63,8 @@ const Navbar = () => {
         <ul className="hidden md:flex space-x-6">
           <li><Link to="/" className="hover:text-gray-400">Home</Link></li>
           <li><Link to="/about" className="hover:text-gray-400">About</Link></li>
-          <li><Link to="/Product" className="hover:text-gray-400">Product</Link></li>
           <li><Link to="/inventory" className="hover:text-gray-400">Inventory</Link></li>
+          <li><Link to="/inventory-table" className="hover:text-gray-400">Products</Link></li>
           <li><Link to="/PCBuilder" className="hover:text-gray-400">PC Builder</Link></li>
           <li><Link to="/pc-builder-admin" className="hover:text-gray-400">PC Builder Admin</Link></li>
           <li><Link to="/contact" className="hover:text-gray-400">Contact</Link></li>
@@ -136,8 +136,8 @@ const Navbar = () => {
         <ul className="md:hidden flex flex-col bg-gray-800 p-4 space-y-2">
           <li><Link to="/" className="block p-2 hover:bg-gray-700">Home</Link></li>
           <li><Link to="/about" className="block p-2 hover:bg-gray-700">About</Link></li>
-          <li><Link to="/Product" className="block p-2 hover:bg-gray-700">Product</Link></li>
           <li><Link to="/inventory" className="block p-2 hover:bg-gray-700">Inventory</Link></li>
+          <li><Link to="/inventory-table" className="block p-2 hover:bg-gray-700">Products</Link></li>
           <li><Link to="/PCBuilder" className="block p-2 hover:bg-gray-700">PC Builder</Link></li>
           <li><Link to="/pc-builder-admin" className="block p-2 hover:bg-gray-700">PC Builder Admin</Link></li>
           <li><Link to="/contact" className="block p-2 hover:bg-gray-700">Contact</Link></li>
