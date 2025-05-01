@@ -36,6 +36,9 @@ const PCBuilderAdmin = () => {
     category: ''
   });
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [componentToDelete, setComponentToDelete] = useState(null);
+
   // Fetch components from backend
   useEffect(() => {
     fetchComponents();
@@ -104,72 +107,74 @@ const PCBuilderAdmin = () => {
   const validateField = (name, value) => {
     switch (name) {
       case 'name':
-        if (!value.trim()) {
-          return 'Name is required';
-        }
-        if (value.trim().length < 3) {
-          return 'Name should be at least 3 characters long';
-        }
+        if (!value.trim()) return 'Name is required';
+        if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        if (value.trim().length > 100) return 'Name cannot exceed 100 characters';
         return '';
-      
+
       case 'brand':
-        if (!value.trim()) {
-          return 'Brand is required';
-        }
-        if (value.trim().length < 2) {
-          return 'Brand should be at least 2 characters long';
-        }
+        if (!value.trim()) return 'Brand is required';
+        if (value.trim().length < 2) return 'Brand must be at least 2 characters';
+        if (value.trim().length > 50) return 'Brand cannot exceed 50 characters';
         return '';
-      
+
       case 'price':
-        if (!value) {
-          return 'Price is required';
-        }
-        if (parseFloat(value) <= 0) {
-          return 'Price must be greater than 0';
-        }
-        if (isNaN(value)) {
-          return 'Please enter a valid number';
-        }
+        if (!value) return 'Price is required';
+        if (isNaN(value) || parseFloat(value) <= 0) return 'Price must be greater than 0';
+        if (parseFloat(value) > 100000) return 'Price cannot exceed $100,000';
         return '';
-      
+
       case 'stock':
-        if (value === '') {
-          return 'Stock is required';
-        }
-        if (parseInt(value) < 0) {
-          return 'Stock cannot be negative';
-        }
-        if (isNaN(value)) {
-          return 'Please enter a valid number';
-        }
+        if (!value) return 'Stock is required';
+        if (!/^\d+$/.test(value)) return 'Only numbers are allowed';
+        if (parseInt(value) < 0) return 'Stock cannot be negative';
+        if (parseInt(value) > 10000) return 'Stock cannot exceed 10,000';
         return '';
-      
+
       case 'category':
-        if (!value) {
-          return 'Please select a category';
-        }
+        if (!value) return 'Category is required';
         return '';
-      
+
       case 'specs':
-        if (!value.trim()) {
-          return 'Specifications are required';
-        }
-        if (value.trim().length < 10) {
-          return 'Please provide more detailed specifications (at least 10 characters)';
-        }
+        if (!value.trim()) return 'Specifications are required';
+        if (value.trim().length < 10) return 'Specifications must be at least 10 characters';
+        if (value.trim().length > 500) return 'Specifications cannot exceed 500 characters';
         return '';
-      
+
       default:
         return '';
     }
   };
 
   const handleFieldChange = (name, value) => {
-    setNewComponent(prev => ({ ...prev, [name]: value }));
-    if (fieldTouched[name]) {
-      const error = validateField(name, value);
-      setValidationErrors(prev => ({ ...prev, [name]: error }));
+    if (name === 'stock') {
+      // Only allow numeric input for stock
+      if (value === '' || /^\d+$/.test(value)) {
+        setNewComponent(prev => ({ ...prev, [name]: value }));
+        // Clear validation error if input is valid
+        setValidationErrors(prev => ({ ...prev, [name]: '' }));
+      } else {
+        // Show validation error for non-numeric input
+        setValidationErrors(prev => ({ ...prev, [name]: 'Only numbers are allowed' }));
+      }
+    } else if (name === 'price') {
+      // Handle price input - allow numbers and one decimal point
+      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+        setNewComponent(prev => ({ ...prev, [name]: value }));
+        // Clear validation error if input is valid
+        setValidationErrors(prev => ({ ...prev, [name]: '' }));
+      } else {
+        // Show validation error for invalid price format
+        setValidationErrors(prev => ({ ...prev, [name]: 'Please enter a valid price' }));
+      }
+    } else {
+      setNewComponent(prev => ({ ...prev, [name]: value }));
+      
+      // Real-time validation for other fields
+      if (fieldTouched[name]) {
+        const error = validateField(name, value);
+        setValidationErrors(prev => ({ ...prev, [name]: error }));
+      }
     }
   };
 
@@ -177,34 +182,38 @@ const PCBuilderAdmin = () => {
     setFieldTouched(prev => ({ ...prev, [name]: true }));
     const error = validateField(name, value);
     setValidationErrors(prev => ({ ...prev, [name]: error }));
+
+    // Format values on blur
+    if (name === 'name' || name === 'brand') {
+      const formattedValue = value.trim();
+      setNewComponent(prev => ({ ...prev, [name]: formattedValue }));
+    } else if (name === 'price') {
+      // Format price to 2 decimal places
+      if (value && !isNaN(value)) {
+        const formattedValue = parseFloat(value).toFixed(2);
+        setNewComponent(prev => ({ ...prev, [name]: formattedValue }));
+      }
+    }
   };
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!newComponent.name.trim()) {
-      errors.name = 'Name is required';
+    const fields = ['name', 'brand', 'price', 'stock', 'specs'];
+    if (!editingComponent) {
+      fields.push('category');
     }
-    
-    if (!newComponent.brand.trim()) {
-      errors.brand = 'Brand is required';
-    }
-    
-    if (!newComponent.category) {
-      errors.category = 'Category is required';
-    }
-    
-    if (!newComponent.price || parseFloat(newComponent.price) <= 0) {
-      errors.price = 'Price must be greater than 0';
-    }
-    
-    if (newComponent.stock < 0) {
-      errors.stock = 'Stock cannot be negative';
-    }
-    
-    if (!newComponent.specs.trim()) {
-      errors.specs = 'Specifications are required';
-    }
+
+    fields.forEach(field => {
+      const error = validateField(field, newComponent[field]);
+      if (error) {
+        errors[field] = error;
+      }
+    });
+
+    // Set all fields as touched
+    setFieldTouched(
+      fields.reduce((acc, field) => ({ ...acc, [field]: true }), {})
+    );
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -229,10 +238,31 @@ const PCBuilderAdmin = () => {
         category: ''
       });
       setValidationErrors({});
-      toast.success('Component added successfully');
+      toast.success('Component saved successfully!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#4F46E5',
+          color: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '16px',
+        },
+        icon: '✅',
+      });
     } catch (error) {
       console.error('Error adding component:', error);
-      toast.error('Failed to add component');
+      toast.error('Failed to save component', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '16px',
+        },
+      });
     }
   };
 
@@ -255,23 +285,60 @@ const PCBuilderAdmin = () => {
         category: ''
       });
       setValidationErrors({});
-      toast.success('Component updated successfully');
+      toast.success('Component updated successfully!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#4F46E5',
+          color: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '16px',
+        },
+        icon: '✅',
+      });
     } catch (error) {
       console.error('Error updating component:', error);
-      toast.error('Failed to update component');
+      toast.error('Failed to update component', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#EF4444',
+          color: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '16px',
+        },
+      });
     }
   };
 
-  const handleDeleteComponent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this component?')) {
-      try {
-        await axios.delete(`http://localhost:3001/api/components/${id}`);
-        await fetchComponents();
-        toast.success('Component deleted successfully');
-      } catch (error) {
-        console.error('Error deleting component:', error);
-        toast.error('Failed to delete component');
-      }
+  const handleDeleteClick = (component) => {
+    setComponentToDelete(component);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await axios.delete(`http://localhost:3001/api/components/${componentToDelete._id}`);
+      await fetchComponents();
+      setShowDeleteConfirm(false);
+      setComponentToDelete(null);
+      toast.success('Component deleted successfully', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#4F46E5',
+          color: '#fff',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '16px',
+        },
+        icon: '✅',
+      });
+    } catch (error) {
+      console.error('Error deleting component:', error);
+      toast.error('Failed to delete component');
     }
   };
 
@@ -289,6 +356,42 @@ const PCBuilderAdmin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black text-white flex flex-col">
+      {/* Delete Confirmation Popup */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md border border-purple-500/20">
+            <div className="p-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-red-500/20 p-4 rounded-full">
+                  <FaTrash className="text-4xl text-red-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Delete Component</h3>
+                <p className="text-gray-300 text-center">
+                  Are you sure you want to delete {componentToDelete?.name}? This action cannot be undone.
+                </p>
+                <div className="flex gap-4 mt-4">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setComponentToDelete(null);
+                    }}
+                    className="px-6 py-2 border border-purple-500/20 rounded-lg text-gray-300 hover:bg-purple-500/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    className="px-6 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-12 mt-[100px]">
@@ -454,7 +557,7 @@ const PCBuilderAdmin = () => {
                             <FaEdit />
                           </button>
                           <button
-                            onClick={() => handleDeleteComponent(component._id)}
+                            onClick={() => handleDeleteClick(component)}
                             className="p-2 text-red-400 hover:text-red-300 transition-colors"
                           >
                             <FaTrash />
@@ -696,14 +799,12 @@ const PCBuilderAdmin = () => {
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
                     <input
-                      type="number"
+                      type="text"
                       value={newComponent.price}
                       onChange={(e) => handleFieldChange('price', e.target.value)}
                       onBlur={(e) => handleFieldBlur('price', e.target.value)}
                       className={`w-full bg-black/20 border ${validationErrors.price ? 'border-red-500' : 'border-purple-500/20'} rounded-lg pl-7 pr-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors duration-200`}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
+                      placeholder="Enter price"
                       required
                     />
                   </div>

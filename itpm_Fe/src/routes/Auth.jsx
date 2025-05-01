@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaLock, FaEnvelope, FaSignOutAlt, FaArrowLeft, FaPhone, FaCalendarAlt, FaBriefcase, FaCamera } from 'react-icons/fa';
+import { FaUser, FaLock, FaEnvelope, FaSignOutAlt, FaArrowLeft, FaPhone, FaCalendarAlt, FaBriefcase } from 'react-icons/fa';
 import axios from 'axios';
 
 const Auth = () => {
@@ -15,30 +15,67 @@ const Auth = () => {
     dateOfBirth: '',
     occupation: ''
   });
-  const [profileImage, setProfileImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        if (value.trim().length < 3) return 'Name must be at least 3 characters';
+        if (value.trim().length > 50) return 'Name cannot exceed 50 characters';
+        return '';
+
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email address';
+        return '';
+
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 8) return 'Password must be at least 8 characters';
+        if (!/(?=.*[a-z])/.test(value)) return 'Password must contain at least one lowercase letter';
+        if (!/(?=.*[A-Z])/.test(value)) return 'Password must contain at least one uppercase letter';
+        if (!/(?=.*\d)/.test(value)) return 'Password must contain at least one number';
+        if (!/(?=.*[!@#$%^&*])/.test(value)) return 'Password must contain at least one special character';
+        return '';
+
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password';
+        if (value !== formData.password) return 'Passwords do not match';
+        return '';
+
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required';
+        if (!/^\+?[\d\s-]{10,}$/.test(value)) return 'Please enter a valid phone number';
+        return '';
+
+      case 'dateOfBirth':
+        if (!value) return 'Date of birth is required';
+        const age = new Date().getFullYear() - new Date(value).getFullYear();
+        if (age < 13) return 'You must be at least 13 years old';
+        if (age > 120) return 'Please enter a valid date of birth';
+        return '';
+
+      case 'occupation':
+        if (!value.trim()) return 'Occupation is required';
+        if (value.trim().length < 2) return 'Occupation must be at least 2 characters';
+        if (value.trim().length > 50) return 'Occupation cannot exceed 50 characters';
+        return '';
+
+      default:
+        return '';
+    }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        setError('Please select an image file');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size should be less than 5MB');
-        return;
-      }
-      setProfileImage(file);
-      setImagePreview(URL.createObjectURL(file));
-      setError('');
-    }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Validate field on change
+    const error = validateField(name, value);
+    setValidationErrors(prev => ({ ...prev, [name]: error }));
   };
 
   const handleSubmit = async (e) => {
@@ -46,46 +83,28 @@ const Auth = () => {
     setError('');
     setSuccess('');
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validate all fields
+    const errors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key]);
+      if (error) errors[key] = error;
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setError('Please fix the validation errors');
       return;
     }
 
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const response = await axios.post(`http://localhost:3001${endpoint}`, formData);
       
-      if (!isLogin && profileImage) {
-        // If registering and has profile image, create FormData
-        const formDataWithImage = new FormData();
-        Object.keys(formData).forEach(key => {
-          if (key !== 'confirmPassword') {
-            formDataWithImage.append(key, formData[key]);
-          }
-        });
-        formDataWithImage.append('profileImage', profileImage);
-
-        const response = await axios.post(`http://localhost:3001${endpoint}`, formDataWithImage, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-          setSuccess('Account created successfully!');
-          setTimeout(() => navigate('/profile'), 1500);
-        }
-      } else {
-        // Regular login or signup without image
-        const response = await axios.post(`http://localhost:3001${endpoint}`, formData);
-        
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-          setSuccess(isLogin ? 'Login successful!' : 'Account created successfully!');
-          setTimeout(() => navigate('/profile'), 1500);
-        }
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        setSuccess(isLogin ? 'Login successful!' : 'Account created successfully!');
+        setTimeout(() => navigate('/profile'), 1500);
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -106,7 +125,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Back Button */}
         <button
@@ -118,13 +137,13 @@ const Auth = () => {
         </button>
 
         {/* Auth Card */}
-        <div className="bg-black/30 backdrop-blur-sm rounded-xl p-8 border border-indigo-500/20">
+        <div className="bg-gray-900/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-purple-500/20 p-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+              {isLogin ? 'Welcome Back!' : 'Create Account'}
             </h2>
-            <p className="text-gray-400">
-              {isLogin ? 'Sign in to continue' : 'Join us to get started'}
+            <p className="text-gray-400 mt-2">
+              {isLogin ? 'Sign in to your account' : 'Join our community'}
             </p>
           </div>
 
@@ -151,55 +170,13 @@ const Auth = () => {
                     placeholder="Full Name"
                     value={formData.name}
                     onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.name ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                   />
+                  {validationErrors.name && (
+                    <p className="mt-1 text-sm text-red-400">{validationErrors.name}</p>
+                  )}
                 </div>
 
-                <div className="relative">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-1 relative">
-                      <FaCamera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                        id="profileImage"
-                      />
-                      <label
-                        htmlFor="profileImage"
-                        className="w-full flex items-center pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-gray-400 cursor-pointer hover:border-indigo-500/40 transition-colors"
-                      >
-                        {profileImage ? 'Change Profile Picture' : 'Add Profile Picture (Optional)'}
-                      </label>
-                    </div>
-                    {imagePreview && (
-                      <div className="relative w-12 h-12">
-                        <img
-                          src={imagePreview}
-                          alt="Profile preview"
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfileImage(null);
-                            setImagePreview(null);
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 text-white hover:bg-red-600 transition-colors"
-                        >
-                          <FaCamera className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isLogin && (
-              <>
                 <div className="relative">
                   <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -208,8 +185,11 @@ const Auth = () => {
                     placeholder="Phone Number"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.phone ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                   />
+                  {validationErrors.phone && (
+                    <p className="mt-1 text-sm text-red-400">{validationErrors.phone}</p>
+                  )}
                 </div>
 
                 <div className="relative">
@@ -217,11 +197,13 @@ const Auth = () => {
                   <input
                     type="date"
                     name="dateOfBirth"
-                    placeholder="Date of Birth"
                     value={formData.dateOfBirth}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.dateOfBirth ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                   />
+                  {validationErrors.dateOfBirth && (
+                    <p className="mt-1 text-sm text-red-400">{validationErrors.dateOfBirth}</p>
+                  )}
                 </div>
 
                 <div className="relative">
@@ -232,10 +214,13 @@ const Auth = () => {
                     placeholder="Occupation"
                     value={formData.occupation}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.occupation ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                   />
+                  {validationErrors.occupation && (
+                    <p className="mt-1 text-sm text-red-400">{validationErrors.occupation}</p>
+                  )}
                 </div>
-              </>
+              </div>
             )}
 
             <div className="relative">
@@ -246,9 +231,11 @@ const Auth = () => {
                 placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                required
-                className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.email ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
+              {validationErrors.email && (
+                <p className="mt-1 text-sm text-red-400">{validationErrors.email}</p>
+              )}
             </div>
 
             <div className="relative">
@@ -259,9 +246,11 @@ const Auth = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                required
-                className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.password ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
+              {validationErrors.password && (
+                <p className="mt-1 text-sm text-red-400">{validationErrors.password}</p>
+              )}
             </div>
 
             {!isLogin && (
@@ -273,15 +262,17 @@ const Auth = () => {
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-2 bg-black/20 border border-indigo-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={`w-full pl-10 pr-4 py-2 bg-black/20 border ${validationErrors.confirmPassword ? 'border-red-500' : 'border-purple-500/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                 />
+                {validationErrors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-400">{validationErrors.confirmPassword}</p>
+                )}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300"
+              className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
               {isLogin ? 'Sign In' : 'Create Account'}
             </button>
@@ -290,9 +281,9 @@ const Auth = () => {
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="text-purple-400 hover:text-purple-300 transition-colors"
             >
-              {isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
+              {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
             </button>
           </div>
         </div>

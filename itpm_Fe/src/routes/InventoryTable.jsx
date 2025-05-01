@@ -67,6 +67,14 @@ const InventoryTable = () => {
     stock: '',
     image: ''
   });
+  const [validationErrors, setValidationErrors] = useState({
+    name: '',
+    category: '',
+    price: '',
+    specs: '',
+    stock: '',
+    image: ''
+  });
   const [imagePreview, setImagePreview] = useState(null);
   const navigate = useNavigate();
 
@@ -85,7 +93,6 @@ const InventoryTable = () => {
 
       setData(response);
       console.log('Data set successfully:', response);
-      toast.success('Products loaded successfully');
     } catch (error) {
       console.error('Error fetching inventory:', error);
       setError(error.message || 'Failed to fetch products');
@@ -119,8 +126,69 @@ const InventoryTable = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    // Name validation
+    if (!newProduct.name.trim()) {
+      errors.name = 'Product name is required';
+    } else if (newProduct.name.length < 3) {
+      errors.name = 'Product name must be at least 3 characters';
+    } else if (newProduct.name.length > 100) {
+      errors.name = 'Product name must be less than 100 characters';
+    }
+
+    // Category validation
+    if (!newProduct.category.trim()) {
+      errors.category = 'Category is required';
+    } else if (newProduct.category.length < 2) {
+      errors.category = 'Category must be at least 2 characters';
+    }
+
+    // Price validation
+    if (!newProduct.price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(newProduct.price) || Number(newProduct.price) <= 0) {
+      errors.price = 'Price must be a positive number';
+    } else if (Number(newProduct.price) > 1000000) {
+      errors.price = 'Price must be less than $1,000,000';
+    }
+
+    // Specs validation
+    if (!newProduct.specs.trim()) {
+      errors.specs = 'Specifications are required';
+    } else if (newProduct.specs.length < 10) {
+      errors.specs = 'Specifications must be at least 10 characters';
+    }
+
+    // Stock validation
+    if (!newProduct.stock) {
+      errors.stock = 'Stock quantity is required';
+    } else if (isNaN(newProduct.stock) || !Number.isInteger(Number(newProduct.stock))) {
+      errors.stock = 'Stock must be a whole number';
+    } else if (Number(newProduct.stock) < 0) {
+      errors.stock = 'Stock cannot be negative';
+    } else if (Number(newProduct.stock) > 10000) {
+      errors.stock = 'Stock must be less than 10,000';
+    }
+
+    // Image validation
+    if (!newProduct.image) {
+      errors.image = 'Product image is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddProduct = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before submitting');
+      return;
+    }
+
     try {
       console.log('Submitting new product:', newProduct);
       await inventoryService.createItem(newProduct);
@@ -135,10 +203,20 @@ const InventoryTable = () => {
         image: ''
       });
       setImagePreview(null);
+      setValidationErrors({});
       fetchInventoryData();
     } catch (error) {
       console.error('Error adding product:', error);
       toast.error(`Failed to add product: ${error.message}`);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewProduct(prev => ({ ...prev, [name]: value }));
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -340,13 +418,6 @@ const InventoryTable = () => {
                     </button>
                     <h1 className="text-3xl font-bold">Our Products</h1>
                   </div>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-                  >
-                    <FaPlus />
-                    Add New Product
-                  </button>
                 </div>
 
                 <div className="mb-6 flex gap-4">
@@ -499,58 +570,88 @@ const InventoryTable = () => {
                   <label className="block text-sm font-medium mb-1">Name</label>
                   <input
                     type="text"
+                    name="name"
                     required
-                    className="w-full p-2 bg-black/30 rounded border border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className={`w-full p-2 bg-black/30 rounded border ${
+                      validationErrors.name ? 'border-red-500' : 'border-purple-500/50'
+                    } focus:border-purple-500 focus:ring-1 focus:ring-purple-500`}
                     value={newProduct.name}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={handleInputChange}
                   />
+                  {validationErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Category</label>
                   <input
                     type="text"
+                    name="category"
                     required
-                    className="w-full p-2 bg-black/30 rounded border border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className={`w-full p-2 bg-black/30 rounded border ${
+                      validationErrors.category ? 'border-red-500' : 'border-purple-500/50'
+                    } focus:border-purple-500 focus:ring-1 focus:ring-purple-500`}
                     value={newProduct.category}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, category: e.target.value }))}
+                    onChange={handleInputChange}
                   />
+                  {validationErrors.category && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.category}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Price</label>
                   <input
                     type="number"
+                    name="price"
                     required
                     min="0"
                     step="0.01"
-                    className="w-full p-2 bg-black/30 rounded border border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className={`w-full p-2 bg-black/30 rounded border ${
+                      validationErrors.price ? 'border-red-500' : 'border-purple-500/50'
+                    } focus:border-purple-500 focus:ring-1 focus:ring-purple-500`}
                     value={newProduct.price}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, price: e.target.value }))}
+                    onChange={handleInputChange}
                   />
+                  {validationErrors.price && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.price}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Specifications</label>
                   <textarea
+                    name="specs"
                     required
-                    className="w-full p-2 bg-black/30 rounded border border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className={`w-full p-2 bg-black/30 rounded border ${
+                      validationErrors.specs ? 'border-red-500' : 'border-purple-500/50'
+                    } focus:border-purple-500 focus:ring-1 focus:ring-purple-500`}
                     value={newProduct.specs}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, specs: e.target.value }))}
+                    onChange={handleInputChange}
                     rows="3"
                   />
+                  {validationErrors.specs && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.specs}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Stock</label>
                   <input
                     type="number"
+                    name="stock"
                     required
                     min="0"
-                    className="w-full p-2 bg-black/30 rounded border border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                    className={`w-full p-2 bg-black/30 rounded border ${
+                      validationErrors.stock ? 'border-red-500' : 'border-purple-500/50'
+                    } focus:border-purple-500 focus:ring-1 focus:ring-purple-500`}
                     value={newProduct.stock}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, stock: e.target.value }))}
+                    onChange={handleInputChange}
                   />
+                  {validationErrors.stock && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.stock}</p>
+                  )}
                 </div>
 
                 <div>
@@ -578,12 +679,18 @@ const InventoryTable = () => {
                       </div>
                     )}
                   </div>
+                  {validationErrors.image && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.image}</p>
+                  )}
                 </div>
 
                 <div className="flex justify-end space-x-4 mt-6">
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setValidationErrors({});
+                    }}
                     className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
                   >
                     Cancel

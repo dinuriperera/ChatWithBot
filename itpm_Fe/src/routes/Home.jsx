@@ -1,37 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { FaLaptop, FaShieldAlt, FaHeadset, FaTruck, FaStar, FaArrowRight } from 'react-icons/fa';
-import Footer from '../Components/Footer';
 import Hero from '../assets/Images/Home/Group 276.png';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import FloatingChatButton from '../Components/FloatingChatButton';
 
 const Home = () => {
-  const [users, setUsers] = useState([]); // ✅ Corrected: useState, not userState
+  const [pcBuilds, setPcBuilds] = useState([]); // State for PC builds
 
   useEffect(() => {
-    axios.get('http://localhost:3001/getusers') // Match the port 3001
-      .then(response => {
-        setUsers(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching users:', error);
-      });
+    try {
+      axios.get('http://localhost:3001/getpcbuilds')
+        .then(response => {
+          setPcBuilds(response.data);
+        });
+    } catch (error) {
+      console.error('Error fetching pc builds:', error);
+    }
   }, []);
-  
-const [pcBuilds, setPcBuilds] = useState([]); // State for PC builds
-
-useEffect(() => {
-  try {
-    axios.get('http://localhost:3001/getpcbuilds')
-      .then(response => {
-        setPcBuilds(response.data); // Corrected to setPcBuilds
-      });
-  } catch (error) {
-    console.error('Error fetching pc builds:', error);
-  }
-}, []);
-
 
   const navigate = useNavigate();
   
@@ -40,13 +26,9 @@ useEffect(() => {
   };
 
   const handleChatWithBot = () => {
-    navigate('/chatbot');  // Changed to navigate within the app
+    navigate('/chatbot');
   };
 
-
-
-
-  
   const featuredProducts = [
     {
       id: 1,
@@ -96,17 +78,6 @@ useEffect(() => {
       description: "Quick and reliable shipping worldwide"
     }
   ];
-  
-  useEffect(() => {
-    axios.get('http://localhost:8000/getUsers') // ensure the port matches backend
-      .then(response => {
-        setUsers(response.data); // <-- set state here
-      })
-      .catch(error => {
-        console.error('Error fetching users:', error);
-      });
-  }, []);
-
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 text-white">
@@ -136,7 +107,10 @@ useEffect(() => {
                 Discover premium laptops tailored to your needs with our AI-powered recommendation system
               </p>
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
-                <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl transition duration-300 transform hover:scale-105 font-medium text-lg shadow-lg hover:shadow-purple-500/25">
+                <button 
+                  onClick={() => navigate('/inventory-table')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl transition duration-300 transform hover:scale-105 font-medium text-lg shadow-lg hover:shadow-purple-500/25"
+                >
                   Shop Now
                 </button>
                 <button 
@@ -265,63 +239,6 @@ useEffect(() => {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="mt-24">
-        <Footer />
-      </div>
-
-
-      <div>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Role</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {users.map((user) => (
-        <tr key={user._id}>
-          <td>{user.Name}</td>
-          <td>{user.Email}</td>
-          <td>{user.Role}</td>
-          <td>{user.Status}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
-
-
-<div>
-  <table>
-    <thead>
-      <tr>
-        <th>category</th>
-        <th>id</th>
-        <th>name</th>
-        <th>price</th>
-        <th>specs</th>
-        <th>brand</th>
-      </tr>
-    </thead>
-    <tbody>
-      {pcBuilds.map((pcBuild) => (
-        <tr key={pcBuild._id}> {/* Corrected key */}
-          <td>{pcBuild.category}</td> {/* Corrected property */}
-          <td>{pcBuild.id}</td> {/* Corrected property */}
-          <td>{pcBuild.name}</td> {/* Corrected property */}
-          <td>{pcBuild.price}</td> {/* Corrected property */}
-          <td>{pcBuild.specs}</td> {/* Corrected property */}
-          <td>{pcBuild.brand}</td> {/* Corrected property */}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
 
       {/* Add the floating chat button */}
       <FloatingChatButton />

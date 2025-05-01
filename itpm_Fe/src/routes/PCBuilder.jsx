@@ -62,6 +62,8 @@ const PCBuilder = () => {
     direction: 'asc'
   });
 
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
   // Fetch components from backend
   useEffect(() => {
     const fetchComponents = async () => {
@@ -179,7 +181,7 @@ const PCBuilder = () => {
   // Save PC Build
   const handleSaveBuild = async () => {
     if (!buildName.trim()) {
-      toast.error('Please enter a build name');
+      alert('Please enter a build name');
       return;
     }
 
@@ -187,15 +189,36 @@ const PCBuilder = () => {
       const buildData = {
         name: buildName,
         description: buildDescription,
-        components: selectedComponents,
+        components: Object.entries(selectedComponents)
+          .filter(([_, component]) => component !== null)
+          .map(([category, component]) => ({
+            category,
+            componentId: component._id,
+            name: component.name,
+            brand: component.brand,
+            price: component.price,
+            specs: component.specs
+          })),
         totalPrice,
+        createdAt: new Date().toISOString(),
+        userId: localStorage.getItem('userId') // Assuming you store userId in localStorage
       };
 
-      await axios.post('http://localhost:3001/api/pcbuilds', buildData);
-      toast.success('PC Build saved successfully!');
-      navigate('/profile'); // Redirect to profile or builds list
+      const response = await axios.post('http://localhost:3001/api/pcbuilds', buildData);
+      
+      if (response.data) {
+        setShowSuccessMessage(true);
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+          navigate('/profile');
+        }, 2000);
+      }
     } catch (error) {
-      toast.error('Failed to save PC Build');
+      console.error('Error saving build:', error);
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 2000);
     }
   };
 
@@ -261,6 +284,23 @@ const PCBuilder = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-slate-900 to-black text-white">
+      {/* Success Message Popup */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+          <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-8 rounded-2xl shadow-2xl transform transition-all duration-300 scale-100 border border-purple-400/20 relative z-10">
+            <div className="flex flex-col items-center gap-4">
+              <div className="bg-green-500/20 p-4 rounded-full">
+                <FaCheck className="text-4xl text-green-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Success!</h3>
+              <p className="text-purple-100 text-lg">Your PC build has been saved successfully</p>
+              <div className="w-16 h-1 bg-purple-400/50 rounded-full mt-2"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12 mt-[100px]">
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 mb-4">
