@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaBox, FaTag, FaWarehouse, FaDollarSign, FaCalendar } from 'react-icons/fa';
+import { FaTimes, FaBox, FaTag, FaWarehouse, FaDollarSign, FaCalendar, FaImage } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
@@ -18,6 +18,22 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
         image: '',
         stock: '',
         status: 'in-stock'
+    });
+
+    const [validationErrors, setValidationErrors] = useState({
+        category: '',
+        name: '',
+        brand: '',
+        price: '',
+        specs: {
+            processor: '',
+            ram: '',
+            storage: '',
+            graphics: '',
+            display: ''
+        },
+        stock: '',
+        image: ''
     });
 
     useEffect(() => {
@@ -41,11 +57,75 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
         }
     }, [item]);
 
+    const validateField = (name, value) => {
+        switch (name) {
+            case 'category':
+                if (!value.trim()) return 'Category is required';
+                return '';
+            
+            case 'name':
+                if (!value.trim()) return 'Name is required';
+                if (value.length < 3) return 'Name must be at least 3 characters';
+                if (value.length > 100) return 'Name must be less than 100 characters';
+                return '';
+            
+            case 'brand':
+                if (!value.trim()) return 'Brand is required';
+                if (value.length < 2) return 'Brand must be at least 2 characters';
+                return '';
+            
+            case 'price':
+                if (!value) return 'Price is required';
+                if (!/^\d*\.?\d*$/.test(value)) return 'Price must be a valid number';
+                if (Number(value) <= 0) return 'Price must be a positive number';
+                if (Number(value) > 1000000) return 'Price must be less than $1,000,000';
+                return '';
+            
+            case 'stock':
+                if (!value) return 'Stock quantity is required';
+                if (!/^\d+$/.test(value)) return 'Stock must be a whole number';
+                if (Number(value) < 0) return 'Stock cannot be negative';
+                if (Number(value) > 10000) return 'Stock must be less than 10,000';
+                return '';
+            
+            case 'image':
+                if (!value.trim()) return 'Image URL is required';
+                if (!value.startsWith('http')) return 'Please enter a valid image URL';
+                return '';
+            
+            default:
+                return '';
+        }
+    };
+
+    const validateSpecField = (name, value) => {
+        if (!value.trim()) return `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+        return '';
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
+        
+        // Restrict stock and price input to numbers only
+        if ((name === 'stock' || name === 'price') && value !== '') {
+            if (name === 'stock' && !/^\d*$/.test(value)) {
+                return;
+            }
+            if (name === 'price' && !/^\d*\.?\d*$/.test(value)) {
+                return;
+            }
+        }
+        
         setFormData(prev => ({
             ...prev,
             [name]: value
+        }));
+        
+        // Validate field immediately
+        const error = validateField(name, value);
+        setValidationErrors(prev => ({
+            ...prev,
+            [name]: error
         }));
     };
 
@@ -58,28 +138,51 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                 [name]: value
             }
         }));
+        
+        // Validate spec field immediately
+        const error = validateSpecField(name, value);
+        setValidationErrors(prev => ({
+            ...prev,
+            specs: {
+                ...prev.specs,
+                [name]: error
+            }
+        }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate all fields before submission
+        const errors = {};
+        
+        // Basic fields validation
+        Object.keys(formData).forEach(key => {
+            if (key !== 'specs' && key !== 'status' && key !== 'image') {
+                const error = validateField(key, formData[key]);
+                if (error) errors[key] = error;
+            }
+        });
+        
+        // Specs validation
+        const specsErrors = {};
+        Object.keys(formData.specs).forEach(key => {
+            const error = validateSpecField(key, formData.specs[key]);
+            if (error) specsErrors[key] = error;
+        });
+        
+        if (Object.keys(specsErrors).length > 0) {
+            errors.specs = specsErrors;
+        }
+        
+        setValidationErrors(errors);
+        
+        if (Object.keys(errors).length > 0) {
+            toast.error('Please fix the validation errors before saving');
+            return;
+        }
+
         try {
-            // Validate required fields
-            if (!formData.category || !formData.name || !formData.brand || !formData.price || !formData.stock) {
-                toast.error('Please fill in all required fields');
-                return;
-            }
-
-            // Validate price and stock are positive numbers
-            if (Number(formData.price) <= 0) {
-                toast.error('Price must be greater than 0');
-                return;
-            }
-
-            if (Number(formData.stock) < 0) {
-                toast.error('Stock cannot be negative');
-                return;
-            }
-
             const processedData = {
                 ...formData,
                 price: Number(formData.price),
@@ -131,12 +234,16 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Category <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         name="category"
                                         value={formData.category}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none hover:bg-gray-700/50 transition-colors relative"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.category ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer appearance-none hover:bg-gray-700/50 transition-colors relative`}
                                         style={{
                                             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238B5CF6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                                             backgroundRepeat: 'no-repeat',
@@ -152,39 +259,122 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                                         <option value="Component">Component</option>
                                         <option value="Accessory">Accessory</option>
                                     </select>
+                                    {validationErrors.category && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.category}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Name <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.name ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                                         required
                                     />
+                                    {validationErrors.name && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Brand</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Brand <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="brand"
                                         value={formData.brand}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.brand ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                                         required
                                     />
+                                    {validationErrors.brand && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.brand}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Price</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Price <span className="text-red-500">*</span>
+                                    </label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         name="price"
                                         value={formData.price}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.price ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                                         required
+                                        pattern="\d*\.?\d*"
+                                        inputMode="decimal"
                                     />
+                                    {validationErrors.price && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.price}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Image Upload */}
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                                <FaImage className="text-blue-500" />
+                                <span>Product Image</span>
+                            </h3>
+                            <div className="bg-gray-800/30 p-4 rounded-xl">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Image URL <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="image"
+                                            value={formData.image}
+                                            onChange={handleChange}
+                                            placeholder="Paste image URL here (Google Drive or Google Images)"
+                                            className={`w-full px-3 py-2 bg-gray-800 border ${
+                                                validationErrors.image ? 'border-red-500' : 'border-purple-500/20'
+                                            } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                            required
+                                        />
+                                        {validationErrors.image && (
+                                            <p className="text-red-500 text-sm mt-1">{validationErrors.image}</p>
+                                        )}
+                                    </div>
+                                    {formData.image && (
+                                        <div className="mt-4">
+                                            <p className="text-sm text-gray-400 mb-2">Image Preview:</p>
+                                            <div className="relative w-full h-48 rounded-lg overflow-hidden border border-purple-500/20">
+                                                <img
+                                                    src={formData.image}
+                                                    alt="Product preview"
+                                                    className="w-full h-full object-contain"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = 'https://via.placeholder.com/400x300?text=Invalid+Image+URL';
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="text-sm text-gray-400">
+                                        <p className="mb-2">Instructions:</p>
+                                        <ol className="list-decimal list-inside space-y-1">
+                                            <li>Upload your image to Google Drive or find an image on Google Images</li>
+                                            <li>For Google Drive: Right-click the image and select "Get link"</li>
+                                            <li>For Google Images: Right-click the image and select "Copy image address"</li>
+                                            <li>Make sure the image is publicly accessible</li>
+                                            <li>Paste the image URL here</li>
+                                        </ol>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -197,54 +387,94 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Processor</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Processor <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="processor"
                                         value={formData.specs.processor}
                                         onChange={handleSpecsChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.specs?.processor ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                        required
                                     />
+                                    {validationErrors.specs?.processor && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.specs.processor}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">RAM</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        RAM <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="ram"
                                         value={formData.specs.ram}
                                         onChange={handleSpecsChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.specs?.ram ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                        required
                                     />
+                                    {validationErrors.specs?.ram && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.specs.ram}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Storage</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Storage <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="storage"
                                         value={formData.specs.storage}
                                         onChange={handleSpecsChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.specs?.storage ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                        required
                                     />
+                                    {validationErrors.specs?.storage && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.specs.storage}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Graphics</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Graphics <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="graphics"
                                         value={formData.specs.graphics}
                                         onChange={handleSpecsChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.specs?.graphics ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                        required
                                     />
+                                    {validationErrors.specs?.graphics && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.specs.graphics}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Display</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Display <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         name="display"
                                         value={formData.specs.display}
                                         onChange={handleSpecsChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.specs?.display ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                                        required
                                     />
+                                    {validationErrors.specs?.display && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.specs.display}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -257,18 +487,29 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-800/30 p-4 rounded-xl">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Stock</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Stock <span className="text-red-500">*</span>
+                                    </label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         name="stock"
                                         value={formData.stock}
                                         onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-gray-800 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        className={`w-full px-3 py-2 bg-gray-800 border ${
+                                            validationErrors.stock ? 'border-red-500' : 'border-purple-500/20'
+                                        } rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500`}
                                         required
+                                        pattern="\d*"
+                                        inputMode="numeric"
                                     />
+                                    {validationErrors.stock && (
+                                        <p className="text-red-500 text-sm mt-1">{validationErrors.stock}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Status <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         name="status"
                                         value={formData.status}
@@ -281,6 +522,7 @@ const EditInventoryModal = ({ isOpen, onClose, item, onSave }) => {
                                             backgroundSize: '1.5em 1.5em',
                                             paddingRight: '2.5rem'
                                         }}
+                                        required
                                     >
                                         <option value="in-stock" className="bg-gray-800">In Stock</option>
                                         <option value="low-stock" className="bg-gray-800">Low Stock</option>

@@ -68,7 +68,6 @@ const Navbar = () => {
           <li><Link to="/PCBuilder" className="hover:text-gray-400">PC Builder</Link></li>
           <li><Link to="/pc-builder-admin" className="hover:text-gray-400">PC Builder Admin</Link></li>
           <li><Link to="/contact" className="hover:text-gray-400">Contact</Link></li>
-          <li><Link to="/admin" className="hover:text-gray-400">Admin</Link></li>
           <li><Link to="/chatbot" className="hover:text-gray-400 flex items-center"><MessageSquare className="mr-1 w-4 h-4" />AI Assistant</Link></li>
           <li className="relative" ref={dropdownRef}>
             <button
@@ -142,7 +141,6 @@ const Navbar = () => {
           <li><Link to="/PCBuilder" className="block p-2 hover:bg-gray-700">PC Builder</Link></li>
           <li><Link to="/pc-builder-admin" className="block p-2 hover:bg-gray-700">PC Builder Admin</Link></li>
           <li><Link to="/contact" className="block p-2 hover:bg-gray-700">Contact</Link></li>
-          <li><Link to="/admin" className="block p-2 hover:bg-gray-700">Admin</Link></li>
           <li><Link to="/chatbot" className="block p-2 hover:bg-gray-700 flex items-center"><MessageSquare className="mr-1 w-4 h-4" />AI Assistant</Link></li>
           <li className="space-y-1">
             <button
