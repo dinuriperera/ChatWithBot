@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const componentRoutes = require('./routes/components');
 const inventoryRoutes = require('./routes/inventory');
 const userPcBuildRoutes = require('./routes/userPcBuilds');
+const cartRoutes = require('./routes/cart');
 
 const app = express();
 
@@ -39,7 +40,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 app.use('/api/auth', authRoutes);
 app.use('/api/components', componentRoutes);
 app.use('/api/inventory', inventoryRoutes);
-app.use('/api/pcbuilds', userPcBuildRoutes);
+app.use('/api/user-pc-builds', userPcBuildRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.get('/getusers', async (req, res) => {
     userModel.find()

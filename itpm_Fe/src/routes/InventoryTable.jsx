@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { inventoryService } from '../services/inventoryService';
 import { toast } from 'react-toastify';
 import { FaSearch, FaPlus, FaImage, FaFilter, FaSort, FaTimes } from 'react-icons/fa';
+import axios from 'axios';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -67,6 +68,7 @@ const InventoryTable = () => {
     image: ''
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const navigate = useNavigate();
 
   const fetchInventoryData = async () => {
     try {
@@ -423,10 +425,59 @@ const InventoryTable = () => {
                           <button className="px-3 py-1.5 bg-purple-600/20 text-purple-400 rounded-lg hover:bg-purple-600/30 transition-colors border border-purple-500/30 hover:border-purple-500/50 text-sm">
                             View Details
                           </button>
-                          <button className="p-1.5 text-purple-400 hover:text-purple-300 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
+                          <button 
+                            onClick={async () => {
+                              try {
+                                // Get token from localStorage
+                                const token = localStorage.getItem('token');
+                                if (!token) {
+                                  toast.error('Please login to add items to cart');
+                                  navigate('/auth');
+                                  return;
+                                }
+
+                                // Create order object with product details
+                                const order = {
+                                  productId: product._id,
+                                  name: product.name,
+                                  price: product.price,
+                                  image: product.image,
+                                  category: product.category,
+                                  specs: product.specs,
+                                  quantity: 1
+                                };
+
+                                // Add to cart using API
+                                const response = await axios.post(
+                                  'http://localhost:3001/api/cart/add',
+                                  order,
+                                  {
+                                    headers: {
+                                      'Authorization': `Bearer ${token}`,
+                                      'Content-Type': 'application/json'
+                                    }
+                                  }
+                                );
+
+                                toast.success('Added to cart successfully');
+                                // Navigate to profile page orders tab with product data
+                                navigate('/profile?tab=orders', {
+                                  state: { 
+                                    showProductPopup: true,
+                                    productData: {
+                                      ...order,
+                                      status: 'pending'
+                                    }
+                                  }
+                                });
+                              } catch (error) {
+                                console.error('Error adding to cart:', error);
+                                toast.error(error.response?.data?.message || 'Failed to add to cart');
+                              }
+                            }}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            Add to Cart
                           </button>
                         </div>
                       </div>

@@ -48,7 +48,7 @@ const Product = () => {
 
   if (error) {
     console.log('Rendering error state'); // Debug log
-    return (
+  return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
         <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-8 max-w-md w-full text-center">
           <p className="text-red-400 text-lg mb-4">Error loading products</p>
@@ -88,36 +88,36 @@ const Product = () => {
             <p className="text-gray-500">Check back later for new products</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (
-              <div
+                <div
                 key={product._id}
                 className="bg-black/30 backdrop-blur-sm rounded-xl overflow-hidden border border-purple-900/50 transform hover:scale-105 transition-all duration-300 shadow-xl"
-              >
-                <div className="relative">
-                  <img
+                >
+                  <div className="relative">
+                    <img
                     src={product.image || 'https://via.placeholder.com/300'}
-                    alt={product.name}
+                      alt={product.name}
                     className="w-full h-64 object-cover"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/300';
                     }}
-                  />
-                </div>
-                <div className="p-6">
+                    />
+                  </div>
+                  <div className="p-6">
                   <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
                   <p className="text-gray-400 mb-4">{product.specs}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-purple-400">
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold text-purple-400">
                       ${product.price?.toFixed(2)}
-                    </span>
+                      </span>
                     <button
                       onClick={() => navigate(`/product/${product._id}`)}
                       className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       View Details
-                    </button>
-                  </div>
+                  </button>
+                </div>
                 </div>
               </div>
             ))}

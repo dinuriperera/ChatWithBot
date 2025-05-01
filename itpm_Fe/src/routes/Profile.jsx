@@ -4,7 +4,7 @@ import Slider from 'react-slick';
 import Footer from '../Components/Footer';
 import ProfileCover from '../../src/assets/Images/Home/Hero.jpg'
 import OrderHistory from '../Components/OrderHistory';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import "../styles/carousel.css";
@@ -17,6 +17,7 @@ const spaceGrotesk = {
 
 const Profile = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop');
@@ -57,6 +58,8 @@ const Profile = () => {
   const [deleteError, setDeleteError] = useState('');
   const [success, setSuccess] = useState('');
   const [userBuilds, setUserBuilds] = useState([]);
+  const [showProductPopup, setShowProductPopup] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null);
 
   const profileImageRef = useRef(null);
   const coverImageRef = useRef(null);
@@ -93,11 +96,26 @@ const Profile = () => {
 
   const navigate = useNavigate();
 
+  const fetchOrders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get('http://localhost:3001/api/cart/orders', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOrders(response.data);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to fetch orders');
+    }
+  };
+
   useEffect(() => {
-    // Get orders from localStorage
-    const savedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    setOrders(savedOrders);
-  }, []);
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     // Get user data from localStorage
@@ -166,6 +184,16 @@ const Profile = () => {
       fetchUserBuilds();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Check for product data in navigation state
+    if (location.state?.showProductPopup && location.state?.productData) {
+      setShowProductPopup(true);
+      setCurrentProduct(location.state.productData);
+      // Clear the state after setting it
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -490,6 +518,44 @@ const Profile = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImageType, setSelectedImageType] = useState(null);
+
+  const handleSaveOrders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to save orders');
+        return;
+      }
+
+      // Get the active cart
+      const response = await axios.get('http://localhost:3001/api/cart', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.data || !response.data.items || response.data.items.length === 0) {
+        toast.error('No items in cart to save');
+        return;
+      }
+
+      // Update cart status to completed
+      await axios.put('http://localhost:3001/api/cart/status', 
+        { status: 'completed' },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+
+      toast.success('Orders saved successfully!');
+      
+      // Refresh orders
+      const savedOrders = await axios.get('http://localhost:3001/api/cart/orders', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOrders(savedOrders.data);
+
+    } catch (error) {
+      console.error('Error saving orders:', error);
+      toast.error(error.response?.data?.message || 'Failed to save orders');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white" style={spaceGrotesk}>
@@ -994,27 +1060,29 @@ const Profile = () => {
             <div className="bg-black/30 backdrop-blur-sm shadow-xl rounded-xl overflow-hidden border border-indigo-900/50">
               <div className="p-6 border-b border-indigo-800 flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-white">My Orders</h2>
-                <button
-                  onClick={handleDownloadOrders}
-                  disabled={isDownloading}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                    isDownloading
-                      ? 'bg-indigo-700 text-gray-300 cursor-not-allowed'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25'
-                  }`}
-                >
-                  {isDownloading ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      <span>Downloading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaDownload />
-                      <span>Download Orders</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleDownloadOrders}
+                    disabled={isDownloading}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                      isDownloading
+                        ? 'bg-indigo-700 text-gray-300 cursor-not-allowed'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25'
+                    }`}
+                  >
+                    {isDownloading ? (
+                      <>
+                        <FaSpinner className="animate-spin" />
+                        <span>Downloading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaDownload />
+                        <span>Download Orders</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               {showNotification && (
                 <div className="notification fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
@@ -1023,8 +1091,12 @@ const Profile = () => {
               )}
               <OrderHistory 
                 orders={orders} 
-                onEditOrder={handleEditOrder}
                 onDeleteOrder={handleDeleteOrder}
+                onSaveOrder={fetchOrders}
+                showProductPopup={showProductPopup}
+                setShowProductPopup={setShowProductPopup}
+                currentProduct={currentProduct}
+                setCurrentProduct={setCurrentProduct}
               />
             </div>
           )}
@@ -1393,17 +1465,9 @@ const Profile = () => {
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/20 mb-4">
                 <FaTrash className="h-6 w-6 text-red-400" />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-2">Delete Order</h3>
-              <p className="text-gray-300 mb-6">
-                Are you sure you want to delete this order? This action cannot be undone.
-              </p>
-              {selectedOrder && (
-                <div className="bg-gray-800 rounded-lg p-4 mb-6">
-                  <p className="text-gray-300">Order ID: #{selectedOrder.id}</p>
-                  <p className="text-gray-300">Items: {selectedOrder.items}</p>
-                  <p className="text-gray-300">Total: {selectedOrder.total}</p>
-                </div>
-              )}
+              <h3 className="text-2xl font-semibold text-white mb-2">Deleted Order</h3>
+              
+             
             </div>
             <div className="flex justify-center space-x-4">
               <button
@@ -1412,12 +1476,7 @@ const Profile = () => {
               >
                 Cancel
               </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-6 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700 transition-colors"
-              >
-                Delete Order
-              </button>
+             
             </div>
           </div>
         </div>
