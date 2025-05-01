@@ -5,14 +5,14 @@ const auth = (req, res, next) => {
         const token = req.header('Authorization')?.replace('Bearer ', '');
         
         if (!token) {
-            return next(); // Allow requests without token for now
+            return res.status(401).json({ message: 'No token provided' });
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        req.user = decoded;
+        req.user = { _id: decoded.userId }; // Set the user ID from the decoded token
         next();
     } catch (error) {
-        next(); // Allow requests even if token verification fails
+        res.status(401).json({ message: 'Invalid token' });
     }
 };
 
