@@ -118,7 +118,7 @@ const ChatbotWrapper = () => {
     },
     {
       id: 'design-response',
-      message: 'Thank you for sharing how you\'ll use your laptop. For graphic design, we\'ll focus on options with high-quality displays and strong graphics performance.',
+      message: 'Thank you for how you\'ll use your laptop. For graphic design, we\'ll focus on options with high-quality displays and strong graphics performance.',
       trigger: 'travel-question',
     },
     {
