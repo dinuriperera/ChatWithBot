@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaSave, FaShoppingBag, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaExclamationTriangle, FaSave, FaShoppingBag, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 const OrderHistory = ({ 
@@ -17,11 +17,41 @@ const OrderHistory = ({
   const [localOrders, setLocalOrders] = useState(orders);
   const [editingNote, setEditingNote] = useState(null);
   const [noteText, setNoteText] = useState('');
+  const [noteError, setNoteError] = useState('');
+  const MAX_SENTENCES = 3;
+  const MIN_CHARACTERS = 10;
+  const MAX_CHARACTERS = 200;
 
   // Update localOrders when orders prop changes
   useEffect(() => {
     setLocalOrders(orders);
   }, [orders]);
+
+  // Function to count sentences in a text
+  const countSentences = (text) => {
+    if (!text) return 0;
+    // Match sentences ending with ., !, ? and followed by a space or end of string
+    const sentenceRegex = /[.!?]+(?:\s|$)/g;
+    const matches = text.match(sentenceRegex);
+    return matches ? matches.length : 0;
+  };
+
+  const validateNote = (text) => {
+    if (!text || text.trim().length < MIN_CHARACTERS) {
+      return `Note must be at least ${MIN_CHARACTERS} characters.`;
+    }
+    
+    if (text.length > MAX_CHARACTERS) {
+      return `Note cannot exceed ${MAX_CHARACTERS} characters.`;
+    }
+    
+    const sentenceCount = countSentences(text);
+    if (sentenceCount > MAX_SENTENCES) {
+      return `Note cannot exceed ${MAX_SENTENCES} sentences.`;
+    }
+    
+    return '';
+  };
 
   const handleDeleteClick = (order) => {
     setOrderToDelete(order);
@@ -105,10 +135,27 @@ const OrderHistory = ({
   const handleNoteEdit = (order) => {
     setEditingNote(order._id);
     setNoteText(order.userNote || '');
+    setNoteError('');
+  };
+
+  const handleNoteChange = (e) => {
+    const text = e.target.value;
+    setNoteText(text);
+    
+    // Validate note
+    const error = validateNote(text);
+    setNoteError(error);
   };
 
   const handleNoteSave = async (orderId) => {
     try {
+      // Validate before saving
+      const error = validateNote(noteText);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
       const token = localStorage.getItem('token');
       if (!token) {
         toast.error('Please login to save notes');
@@ -142,6 +189,7 @@ const OrderHistory = ({
     } finally {
       setEditingNote(null);
       setNoteText('');
+      setNoteError('');
     }
   };
 
@@ -281,20 +329,37 @@ const OrderHistory = ({
                     </td>
                     <td className="px-8 py-6 whitespace-nowrap">
                       {editingNote === order._id ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={noteText}
-                            onChange={(e) => setNoteText(e.target.value)}
-                            className="bg-gray-800 border border-purple-500/20 rounded-lg px-3 py-1 text-white text-sm w-full"
-                            placeholder="Add a note..."
-                          />
-                          <button
-                            onClick={() => handleNoteSave(order._id)}
-                            className="text-green-400 hover:text-green-300 transition-colors duration-300"
-                          >
-                            <FaSave className="w-4 h-4" />
-                          </button>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={noteText}
+                              onChange={handleNoteChange}
+                              className={`bg-gray-800 border ${noteError ? 'border-red-500/50' : 'border-purple-500/20'} rounded-lg px-3 py-1 text-white text-sm w-full`}
+                              placeholder={`Add a note (${MIN_CHARACTERS}-${MAX_CHARACTERS} chars, max ${MAX_SENTENCES} sentences)...`}
+                            />
+                            <button
+                              onClick={() => handleNoteSave(order._id)}
+                              className={`${noteError ? 'text-gray-500 cursor-not-allowed' : 'text-green-400 hover:text-green-300 transition-colors duration-300'}`}
+                              disabled={!!noteError}
+                            >
+                              <FaSave className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {noteError && (
+                            <div className="flex items-center gap-1 text-xs text-red-400">
+                              <FaExclamationTriangle className="w-3 h-3" />
+                              <span>{noteError}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs">
+                            <span className={`${noteText.length < MIN_CHARACTERS || noteText.length > MAX_CHARACTERS ? 'text-red-400' : 'text-gray-400'}`}>
+                              {noteText.length}/{MIN_CHARACTERS}-{MAX_CHARACTERS} characters
+                            </span>
+                            <span className={`${countSentences(noteText) > MAX_SENTENCES ? 'text-red-400' : 'text-gray-400'}`}>
+                              {countSentences(noteText)}/{MAX_SENTENCES} sentences
+                            </span>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
